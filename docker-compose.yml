@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wedding-planner-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: ${DB_NAME:-wedding_planner_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-wedding_planner_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - wedding-planner
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    container_name: wedding-planner-web
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${DB_NAME:-wedding_planner_db};Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-changeme}
+      Authentication__Provider: ${AUTH_PROVIDER:-None}
+      Authentication__Firebase__ProjectId: ${FIREBASE_PROJECT_ID:-}
+      Authentication__Firebase__Issuer: ${FIREBASE_ISSUER:-}
+      Authentication__Firebase__Audience: ${FIREBASE_AUDIENCE:-}
+      Authentication__Supabase__Url: ${SUPABASE_URL:-}
+      Authentication__Supabase__Issuer: ${SUPABASE_ISSUER:-}
+      Authentication__Supabase__Audience: ${SUPABASE_AUDIENCE:-authenticated}
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    volumes:
+      - aspnet_keys:/root/.aspnet/DataProtection-Keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wedding-planner
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: wedding-planner-pgadmin
+    profiles: ["tools"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-changeme}
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wedding-planner
+
+volumes:
+  postgres_data:
+  aspnet_keys:
+
+networks:
+  wedding-planner:

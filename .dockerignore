@@ -1,0 +1,11 @@
+.git
+.gitignore
+.vs
+.vscode
+**/bin
+**/obj
+*.user
+*.suo
+.env
+firebase-service-account.json
+docker-compose.override.yml

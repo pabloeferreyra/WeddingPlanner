@@ -1,0 +1,89 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+:root {
+  --ink: #283334;
+  --muted: #6f7b78;
+  --cream: #f8f4ed;
+  --sage: #80958a;
+  --coral: #d77962;
+}
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.navbar {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(40, 51, 52, .12) !important;
+}
+
+.navbar-brand {
+  color: var(--ink) !important;
+  font-size: 1.35rem;
+  letter-spacing: .02em;
+}
+
+.navbar-brand span { color: var(--coral); }
+
+.hero-panel {
+  background: linear-gradient(120deg, #dce5dc 0%, #f2dfd4 100%);
+  border-radius: 0 0 44px 44px;
+  margin: -1rem -12px 4rem;
+  padding: 7rem clamp(2rem, 8vw, 8rem) 6rem;
+}
+
+.hero-panel h1 {
+  font-size: clamp(2.7rem, 6vw, 5.8rem);
+  font-weight: 400;
+  line-height: .98;
+  max-width: 850px;
+  margin: .6rem 0 1.5rem;
+}
+
+.hero-copy { color: var(--muted); font: 1.05rem/1.7 Georgia, serif; max-width: 550px; }
+.eyebrow { color: var(--coral); font: 700 .72rem/1.2 Arial, sans-serif; letter-spacing: .15em; text-transform: uppercase; }
+.btn-primary { background: var(--ink); border-color: var(--ink); border-radius: 999px; padding: .8rem 1.5rem; }
+.section-heading { align-items: end; display: flex; justify-content: space-between; margin-bottom: 1.5rem; }
+.section-heading h2 { font-size: 2rem; font-weight: 400; margin: 0; }
+.counter { color: var(--muted); font: .8rem Arial, sans-serif; }
+.wedding-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.wedding-card { align-items: center; background: #fffdf9; border: 1px solid rgba(40, 51, 52, .08); border-radius: 16px; display: flex; gap: 1rem; padding: 1.2rem; }
+.date-badge { background: #e8eee7; border-radius: 12px; color: var(--sage); display: grid; min-width: 58px; padding: .55rem .4rem; text-align: center; }
+.date-badge strong { font-size: 1.5rem; line-height: 1; }
+.date-badge span { font: 700 .65rem Arial, sans-serif; }
+.wedding-card h3 { font-size: 1.2rem; margin: 0 0 .25rem; }
+.wedding-card p, .empty-state p { color: var(--muted); margin: 0; }
+.empty-state { border: 1px dashed rgba(40, 51, 52, .25); margin-top: 1rem; padding: 2rem; text-align: center; }
+.empty-state h3 { font-size: 1.3rem; }

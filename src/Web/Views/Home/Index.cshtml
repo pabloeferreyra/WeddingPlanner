@@ -1,0 +1,44 @@
+﻿@model IReadOnlyList<WeddingPlanner.Application.Weddings.WeddingSummary>
+
+@{
+    ViewData["Title"] = "Wedding Planner";
+}
+
+<section class="hero-panel">
+    <p class="eyebrow">Tu celebración, en un solo lugar</p>
+    <h1>Planifica el día que recordarás para siempre.</h1>
+    <p class="hero-copy">Organiza fechas, proveedores y presupuesto desde una experiencia web sencilla, segura y hecha para tu historia.</p>
+    <a class="btn btn-primary" asp-controller="Home" asp-action="Privacy">Explorar planificación</a>
+</section>
+
+<section class="section-heading">
+    <div>
+        <p class="eyebrow">Próximas celebraciones</p>
+        <h2>Tu agenda empieza aquí</h2>
+    </div>
+    <span class="counter">@Model.Count eventos</span>
+</section>
+
+<div class="wedding-grid">
+    @foreach (var wedding in Model)
+    {
+        <article class="wedding-card">
+            <div class="date-badge">
+                <strong>@wedding.Date.ToString("dd")</strong>
+                <span>@wedding.Date.ToString("MMM").ToUpperInvariant()</span>
+            </div>
+            <div>
+                <h3>@wedding.Name</h3>
+                <p>@(string.IsNullOrWhiteSpace(wedding.Venue) ? "Lugar por confirmar" : wedding.Venue)</p>
+            </div>
+        </article>
+    }
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="empty-state">
+        <h3>Aún no hay celebraciones registradas</h3>
+        <p>Cuando conectes tu primer evento, aparecerá aquí.</p>
+    </div>
+}
