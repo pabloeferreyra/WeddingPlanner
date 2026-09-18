@@ -1,4 +1,4 @@
-namespace WeddingPlanner.Core.Domain.Entities;
+namespace WeddingPlanner.Core.Domain.Enums;
 
 public enum GuestStatus
 {

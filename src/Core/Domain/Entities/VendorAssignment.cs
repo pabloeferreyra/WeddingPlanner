@@ -1,18 +1,41 @@
+using System.ComponentModel.DataAnnotations;
+using WeddingPlanner.Core.Domain.Enums;
+
 namespace WeddingPlanner.Core.Domain.Entities;
 public class VendorAssignment
 {
-    public int Id { get; set; }
-    public int WeddingId { get; set; }
-    public int VendorId { get; set; }
-    public string ServiceType { get; set; } = string.Empty;
-    public DateTime ContractDate { get; set; } = DateTime.Now;
-    public decimal PaymentAmount { get; set; } = 0;
-    public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
-    public string Notes { get; set; } = string.Empty;
-    public string AssignedAt { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
-    public DateTime UpdatedAt { get; set; } = DateTime.Now;
+    public Guid Id { get; set; } = Guid.NewGuid();
 
+    [Required]
+    public Guid WeddingId { get; set; }
     public Wedding? Wedding { get; set; }
+
+    [Required]
+    public Guid VendorId { get; set; }
     public Vendor? Vendor { get; set; }
+
+    public VendorServiceType ServiceType { get; set; }
+
+    public DateTime ContractDate { get; set; }
+    public DateTime? ContractEndDate { get; set; }
+
+    [Range(0, double.MaxValue)]
+    public decimal PaymentAmount { get; set; }
+
+    [Range(0, 100)]
+    public decimal DepositPercentage { get; set; } = 50;
+
+    public decimal DepositPaid { get; set; } = 0;
+    public decimal TotalPaid { get; set; } = 0;
+
+    public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
+
+    [StringLength(500)]
+    public string? Notes { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime? UpdatedAt { get; set; }
+
+    // Navigation
+    public ICollection<VendorDocument> Contracts { get; set; } = [];
 }

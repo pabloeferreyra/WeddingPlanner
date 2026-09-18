@@ -4,7 +4,7 @@ namespace WeddingPlanner.Core.Domain.Entities;
 
 public class Wedding
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
     public string Title { get; set; } = string.Empty;
     public DateTime Date { get; set; }
     public string Location { get; set; } = string.Empty;
