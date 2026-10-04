@@ -13,8 +13,6 @@ public sealed class WeddingService(IWeddingRepository weddingRepository) : IWedd
 
         var weddings = await weddingRepository.GetUpcomingAsync(limit, cancellationToken);
 
-        return weddings
-            .Select(wedding => new WeddingSummary(wedding.Name, wedding.Date, wedding.Venue))
-            .ToList();
+        return [.. weddings.Select(wedding => new WeddingSummary(wedding.Title, wedding.WeddingDate, wedding.Location.ToString()))];
     }
 }

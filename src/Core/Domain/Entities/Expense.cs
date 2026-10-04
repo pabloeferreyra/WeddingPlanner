@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using WeddingPlanner.Core.Domain.Enums;
 
 namespace WeddingPlanner.Core.Domain.Entities;
@@ -5,15 +6,35 @@ namespace WeddingPlanner.Core.Domain.Entities;
 public class Expense
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public int BudgetId { get; set; }
-    public Budget Budget { get; set; } = new Budget();
-    public int CategoryId { get; set; }
-    public ExpenseCategory Category { get; set; } = ExpenseCategory.Catering;
-    public string Description { get; set; } = string.Empty;
-    public decimal Amount { get; set; } = 0;
-    public Vendor? Vendor { get; set; }
-    public DateTime PaymentDate { get; set; } = DateTime.Now;
-    public bool IsRecurring { get; set; } = false;
-    public string Notes { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+    [Required]
+    public Guid BudgetId { get; set; }
+    public Budget? Budget { get; set; }
+
+    [Required(ErrorMessage = "Expense category is required")]
+    public ExpenseCategory Category { get; set; }
+
+    [Required(ErrorMessage = "Description is required")]
+    [StringLength(500)]
+    public string? Description { get; set; }
+
+    [Required]
+    [Range(0.01, double.MaxValue)]
+    public decimal Amount { get; set; }
+
+    [StringLength(200)]
+    public string? VendorName { get; set; }
+
+    public DateTime ExpenseDate { get; set; }
+    public DateTime? PaymentDate { get; set; }
+
+    public bool IsRecurring { get; set; }
+    public RecurrenceType? RecurrenceType { get; set; }
+
+    [StringLength(500)]
+    public string? Notes { get; set; }
+
+    public string? ReceiptUrl { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -7,14 +7,14 @@ public class VendorDocument
     public Guid Id { get; set; } = Guid.NewGuid();
 
     public Guid VendorId { get; set; }
-    public Vendor Vendor { get; set; }
+    public Vendor? Vendor { get; set; }
 
     public Guid? VendorAssignmentId { get; set; }
-    public VendorAssignment VendorAssignment { get; set; }
+    public VendorAssignment? VendorAssignment { get; set; }
 
     [Required(ErrorMessage = "Document name is required")]
     [StringLength(200)]
-    public string DocumentName { get; set; }
+    public string? DocumentName { get; set; }
 
     public DocumentType DocumentType { get; set; }
 

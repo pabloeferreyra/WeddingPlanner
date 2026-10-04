@@ -13,7 +13,7 @@ public sealed class WeddingRepository(ApplicationDbContext dbContext) : IWedding
     {
         return await dbContext.Weddings
             .AsNoTracking()
-            .OrderBy(wedding => wedding.Date)
+            .OrderBy(wedding => wedding.WeddingDate)
             .Take(limit)
             .ToListAsync(cancellationToken);
     }
