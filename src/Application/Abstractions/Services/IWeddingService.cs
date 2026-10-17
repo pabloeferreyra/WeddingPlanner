@@ -1,4 +1,4 @@
-using WeddingPlanner.Application.Weddings;
+using WeddingPlanner.Application.Implementations;
 
 namespace WeddingPlanner.Application.Abstractions.Services;
 

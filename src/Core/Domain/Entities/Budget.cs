@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using WeddingPlanner.Core.Domain.Enums;
 
 namespace WeddingPlanner.Core.Domain.Entities;
 

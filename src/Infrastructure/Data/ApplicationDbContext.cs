@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using System.Text.Json;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using WeddingPlanner.Core.Domain.Entities;
@@ -9,7 +9,17 @@ namespace WeddingPlanner.Infrastructure.Data;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : IdentityDbContext<User>(options)
 {
+    public DbSet<Budget> Budgets => Set<Budget>();
+    public DbSet<Address> Addresses => Set<Address>();
+    public DbSet<ChecklistItem> ChecklistItems => Set<ChecklistItem>();
+    public DbSet<Expense> Expenses => Set<Expense>();
+    public DbSet<Vendor> Vendors => Set<Vendor>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Guest> Guests => Set<Guest>();
     public DbSet<Wedding> Weddings => Set<Wedding>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Timeline> TimeLines => Set<Timeline>();
+    public DbSet<TaskItem> TaskItems => Set<TaskItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,4 +1,4 @@
-namespace WeddingPlanner.Application.Weddings;
+namespace WeddingPlanner.Application.Implementations;
 
 public sealed record WeddingSummary(
     string Name,

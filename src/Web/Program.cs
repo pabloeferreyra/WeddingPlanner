@@ -1,11 +1,8 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using WeddingPlanner.Application.Abstractions.Services;
-using WeddingPlanner.Application.Weddings;
 using WeddingPlanner.Core.Domain.Entities;
-using WeddingPlanner.Web.Configuration;
 using WeddingPlanner.Infrastructure;
+using WeddingPlanner.Web.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +14,6 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 builder.Services.Configure<ExternalAuthenticationOptions>(
     builder.Configuration.GetSection("Authentication"));
-builder.Services.AddScoped<IWeddingService, WeddingService>();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddDefaultIdentity<User>(options =>
     {
