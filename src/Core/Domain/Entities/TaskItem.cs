@@ -32,7 +32,7 @@ public class TaskItem
     public int EstimatedHours { get; set; } = 1;
     public int? ActualHours { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
     public DateTime? CompletedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 

@@ -39,7 +39,7 @@ public class Vendor
     public string? FacebookUrl { get; set; }
     public string? InstagramUrl { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
 
     // Navigation
     public ICollection<VendorAssignment> Assignments { get; set; } = [];

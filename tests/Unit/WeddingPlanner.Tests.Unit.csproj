@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Core\WeddingPlanner.Core.csproj" />
+    <ProjectReference Include="..\..\src\Application\WeddingPlanner.Application.csproj" />
   </ItemGroup>
 
 </Project>

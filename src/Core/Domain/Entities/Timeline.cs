@@ -37,5 +37,5 @@ public class Timeline
     [StringLength(500)]
     public string? Notes { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
 }

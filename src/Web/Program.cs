@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using WeddingPlanner.Application;
 using WeddingPlanner.Core.Domain.Entities;
 using WeddingPlanner.Infrastructure;
 using WeddingPlanner.Web.Configuration;
@@ -14,6 +15,7 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 builder.Services.Configure<ExternalAuthenticationOptions>(
     builder.Configuration.GetSection("Authentication"));
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddDefaultIdentity<User>(options =>
     {

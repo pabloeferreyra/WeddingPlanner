@@ -19,7 +19,7 @@ public class Budget
     // Budget by Categories
     public Dictionary<string, decimal> CategoryAllocations { get; set; } = [];
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
     public DateTime? UpdatedAt { get; set; }
 
     // Navigation

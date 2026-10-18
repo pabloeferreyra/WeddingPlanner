@@ -36,6 +36,6 @@ public class Guest
     public bool IsFamily { get; set; }
     public bool IsVIP { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
     public DateTime? RSVPDate { get; set; }
 }

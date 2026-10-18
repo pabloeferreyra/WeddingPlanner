@@ -17,5 +17,5 @@ public class ChecklistItem
     public bool IsCompleted { get; set; } = false;
     public DateTime? CompletedAt { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
 }

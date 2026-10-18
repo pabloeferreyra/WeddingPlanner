@@ -9,7 +9,7 @@ public class User : IdentityUser
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public Role Role { get; set; } = Role.Admin;
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
     public ICollection<Wedding> Weddings { get; set; } = [];
     public ICollection<Notification> Notifications { get; set; } = [];
     public ICollection<TaskItem> AssignedTasks { get; set; } = [];

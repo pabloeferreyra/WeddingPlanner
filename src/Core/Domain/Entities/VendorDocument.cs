@@ -24,6 +24,6 @@ public class VendorDocument
 
     public long FileSizeBytes { get; set; }
 
-    public DateTime UploadedAt { get; set; } = DateTime.Now;
+    public DateTime UploadedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
     public DateTime? ExpiryDate { get; set; }
 }

@@ -27,5 +27,5 @@ public class Notification
     public bool IsRead { get; set; } = false;
     public DateTime? ReadAt { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
 }

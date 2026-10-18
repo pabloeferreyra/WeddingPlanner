@@ -43,7 +43,7 @@ public class Wedding
     public User? Coordinator { get; set; }
 
     // Timeline
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
     public DateTime? UpdatedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
 

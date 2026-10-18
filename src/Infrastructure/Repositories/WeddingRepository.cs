@@ -10,9 +10,15 @@ IWeddingRepository
 {
     public async Task<IReadOnlyList<Wedding>> GetUpcomingAsync(
         int limit,
-        CancellationToken cancellationToken = default) => await dbContext.Weddings
+        CancellationToken cancellationToken = default)
+    {
+        var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Unspecified);
+
+        return await dbContext.Weddings
             .AsNoTracking()
+            .Where(wedding => wedding.WeddingDate >= today)
             .OrderBy(wedding => wedding.WeddingDate)
             .Take(limit)
             .ToListAsync(cancellationToken);
+    }
 }

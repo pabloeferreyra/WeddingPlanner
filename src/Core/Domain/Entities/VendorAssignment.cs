@@ -33,7 +33,7 @@ public class VendorAssignment
     [StringLength(500)]
     public string? Notes { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
     public DateTime? UpdatedAt { get; set; }
 
     // Navigation
