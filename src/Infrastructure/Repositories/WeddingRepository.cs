@@ -21,4 +21,22 @@ IWeddingRepository
             .Take(limit)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default)
+    {
+        var specifiedDate = DateTime.SpecifyKind(date.Date, DateTimeKind.Unspecified);
+
+        return await dbContext.Weddings
+            .AsNoTracking()
+            .Where(wedding => wedding.WeddingDate == specifiedDate)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Wedding>?> GetByTitle(string title, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Weddings
+            .AsNoTracking()
+            .Where(wedding => wedding.Title.Contains(title))
+            .ToListAsync(cancellationToken);
+    }
 }

@@ -1,9 +1,9 @@
-using WeddingPlanner.Application.Abstractions.Persistence;
+using WeddingPlanner.Application.Abstractions.Services;
 using WeddingPlanner.Core.Domain.Entities;
 
 namespace WeddingPlanner.Application.UseCases.CreateWedding;
 
-public sealed class CreateWeddingHandler(IRepository<Wedding> weddingRepository)
+public sealed class CreateWeddingHandler(IWeddingService weddingService)
 {
     public async Task<Guid> HandleAsync(CreateWeddingCommand command)
     {
@@ -24,7 +24,7 @@ public sealed class CreateWeddingHandler(IRepository<Wedding> weddingRepository)
             InitialBudget = command.InitialBudget
         };
 
-        await weddingRepository.AddAsync(wedding);
+        await weddingService.AddAsync(wedding);
         return wedding.Id;
     }
 }

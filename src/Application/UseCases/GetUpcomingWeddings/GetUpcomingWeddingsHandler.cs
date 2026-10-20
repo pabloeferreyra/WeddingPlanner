@@ -1,12 +1,12 @@
-using WeddingPlanner.Application.Abstractions.Persistence;
-using WeddingPlanner.Core.Domain.Entities;
+using WeddingPlanner.Application.Abstractions.Services;
+using WeddingPlanner.Application.Implementations;
 
 namespace WeddingPlanner.Application.UseCases.GetUpcomingWeddings;
 
-public sealed class GetUpcomingWeddingsHandler(IWeddingRepository repository)
+public sealed class GetUpcomingWeddingsHandler(IWeddingService service)
 {
-    public async Task<IEnumerable<Wedding>> Handle(GetUpcomingWeddingsQuery query)
+    public async Task<IReadOnlyList<WeddingSummary>> Handle(GetUpcomingWeddingsQuery query)
     {
-        return await repository.GetUpcomingAsync(query.Limit);
+        return await service.GetUpcomingAsync(query.Limit);
     }
 }

@@ -17,7 +17,21 @@ public sealed class WeddingService(IWeddingRepository weddingRepository,
 
         var weddings = await weddingRepository.GetUpcomingAsync(limit, cancellationToken);
 
-        return [.. weddings.Select(wedding => new WeddingSummary(wedding.Title, wedding.WeddingDate, wedding.Location.ToString()))];
+        return [.. weddings.Select(wedding => new WeddingSummary(wedding.Id, wedding.Title, wedding.WeddingDate, wedding.Location.ToString()))];
+    }
+
+    public async Task<IReadOnlyList<Wedding>?> GetByDateAsync(
+        DateTime date,
+        CancellationToken cancellationToken = default)
+    {
+        return await weddingRepository.GetByDateAsync(date, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Wedding>?> GetByTitleAsync(
+        string title,
+        CancellationToken cancellationToken = default)
+    {
+        return await weddingRepository.GetByTitle(title, cancellationToken);
     }
 
     public async Task<Wedding?> GetByIdAsync(
@@ -27,7 +41,7 @@ public sealed class WeddingService(IWeddingRepository weddingRepository,
     public async Task<IEnumerable<Wedding>> GetAllAsync(
         CancellationToken cancellationToken = default) => await genericRepository.GetAllAsync();
 
-    public async Task AddAsync(
+    public async Task<Wedding> AddAsync(
         Wedding wedding,
         CancellationToken cancellationToken = default) => await genericRepository.AddAsync(wedding);
 
