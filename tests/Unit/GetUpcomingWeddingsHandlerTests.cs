@@ -1,5 +1,5 @@
 using FluentAssertions;
-using WeddingPlanner.Application.UseCases.GetUpcomingWeddings;
+using WeddingPlanner.Application.UseCases.Weddings;
 
 namespace WeddingPlanner.Tests.Unit;
 

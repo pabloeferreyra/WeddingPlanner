@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using WeddingPlanner.Application.UseCases.GetUpcomingWeddings;
-using WeddingPlanner.Application.UseCases.GetWeddingById;
-using WeddingPlanner.Application.UseCases.CreateWedding;
+using WeddingPlanner.Application.UseCases.Weddings;
 
 namespace WeddingPlanner.Web.Controllers;
 

@@ -1,7 +1,5 @@
 using FluentAssertions;
-using WeddingPlanner.Application.UseCases.DeleteWedding;
-using WeddingPlanner.Application.UseCases.ExistsWedding;
-using WeddingPlanner.Application.UseCases.UpdateWedding;
+using WeddingPlanner.Application.UseCases.Weddings;
 using WeddingPlanner.Core.Domain.Entities;
 
 namespace WeddingPlanner.Tests.Unit;
