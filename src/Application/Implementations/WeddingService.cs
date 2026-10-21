@@ -9,9 +9,7 @@ public sealed class WeddingService(IWeddingRepository weddingRepository,
             IRepository<Wedding> genericRepository,
             ILogger<WeddingService> logger) : IWeddingService
 {
-    public async Task<IReadOnlyList<WeddingSummary>> GetUpcomingAsync(
-        int limit,
-        CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<WeddingSummary>> GetUpcomingAsync(int limit, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
 
@@ -20,40 +18,25 @@ public sealed class WeddingService(IWeddingRepository weddingRepository,
         return [.. weddings.Select(wedding => new WeddingSummary(wedding.Id, wedding.Title, wedding.WeddingDate, wedding.Location.ToString()))];
     }
 
-    public async Task<IReadOnlyList<Wedding>?> GetByDateAsync(
-        DateTime date,
-        CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default)
     {
         return await weddingRepository.GetByDateAsync(date, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Wedding>?> GetByTitleAsync(
-        string title,
-        CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Wedding>?> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
     {
         return await weddingRepository.GetByTitle(title, cancellationToken);
     }
 
-    public async Task<Wedding?> GetByIdAsync(
-        Guid id,
-        CancellationToken cancellationToken = default) => await genericRepository.GetByIdAsync(id);
+    public async Task<Wedding?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => await genericRepository.GetByIdAsync(id);
 
-    public async Task<IEnumerable<Wedding>> GetAllAsync(
-        CancellationToken cancellationToken = default) => await genericRepository.GetAllAsync();
+    public async Task<IEnumerable<Wedding>> GetAllAsync(CancellationToken cancellationToken = default) => await genericRepository.GetAllAsync();
 
-    public async Task<Wedding> AddAsync(
-        Wedding wedding,
-        CancellationToken cancellationToken = default) => await genericRepository.AddAsync(wedding);
+    public async Task<Wedding> AddAsync(Wedding wedding, CancellationToken cancellationToken = default) => await genericRepository.AddAsync(wedding);
 
-    public async Task UpdateAsync(
-        Wedding wedding,
-        CancellationToken cancellationToken = default) => await genericRepository.UpdateAsync(wedding);
+    public async Task UpdateAsync(Wedding wedding, CancellationToken cancellationToken = default) => await genericRepository.UpdateAsync(wedding);
 
-    public async Task DeleteAsync(
-        Guid weddingId,
-        CancellationToken cancellationToken = default) => await genericRepository.DeleteAsync(weddingId);
+    public async Task DeleteAsync(Guid weddingId, CancellationToken cancellationToken = default) => await genericRepository.DeleteAsync(weddingId);
 
-    public async Task<bool> ExistsAsync(
-        Guid weddingId,
-        CancellationToken cancellationToken = default) => await genericRepository.ExistsAsync(weddingId);
+    public async Task<bool> ExistsAsync(Guid weddingId, CancellationToken cancellationToken = default) => await genericRepository.ExistsAsync(weddingId);
 }

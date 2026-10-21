@@ -11,8 +11,26 @@ src/
   Infrastructure/ DbContext, Identity y persistencia EF Core
   Web/             Aplicación ASP.NET Core MVC + Razor
 tests/
-  Unit/            Pruebas unitarias del dominio
+  Unit/            Pruebas unitarias de casos de uso y lógica de aplicación
 ```
+
+## Contexto rápido para nuevas sesiones
+
+Usa este archivo como punto de partida y consulta después solo los archivos de la parte que vayas a cambiar. Es un mapa del proyecto, no sustituye al código actual: verifica la implementación relevante antes de editar.
+
+- `src/Web/Program.cs`: composición de dependencias y arranque HTTP; aplica las migraciones al iniciar.
+- `src/Web/Controllers/`, `Views/` y `Configuration/`: interfaz MVC/Razor y configuración web.
+- `src/Application/UseCases/`: handlers de casos de uso; `Abstractions/` define contratos y `Implementations/` contiene servicios de aplicación.
+- `src/Core/Domain/`: entidades y enums del dominio, sin dependencias de infraestructura.
+- `src/Infrastructure/Data/`: `ApplicationDbContext` y migraciones EF Core; `Repositories/` implementa persistencia.
+- `src/Application/DependencyInjection.cs` y `src/Infrastructure/DependencyInjection.cs`: registro de servicios de cada capa.
+- `tests/Unit/`: pruebas unitarias; revisa los tests del handler o servicio que modifiques.
+
+### Flujo y límites entre capas
+
+`Web` compone y presenta; `Application` coordina casos de uso y contratos; `Core` contiene el dominio; `Infrastructure` implementa persistencia y servicios externos. Mantén las dependencias apuntando hacia el dominio y la aplicación: los casos de uso no deben depender de EF Core ni de ASP.NET Core. La persistencia usa EF Core con PostgreSQL y la autenticación local usa ASP.NET Core Identity.
+
+Al retomar trabajo, revisa también el estado actual del repositorio antes de cambiar archivos: puede haber cambios locales que deban conservarse. Para un cambio concreto, busca primero sus usos y pruebas relacionados en vez de leer todo el proyecto.
 
 ## Requisitos
 
