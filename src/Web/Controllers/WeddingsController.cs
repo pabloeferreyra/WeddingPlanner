@@ -27,7 +27,7 @@ public sealed class WeddingsController(
     {
         if (!ModelState.IsValid)
         {
-            return View(model);
+            return PartialView("_Create", model);
         }
 
         var weddingId = await createWeddingHandler.HandleAsync(new CreateWeddingCommand
@@ -70,7 +70,7 @@ public sealed class WeddingsController(
     {
         if (!ModelState.IsValid)
         {
-            return View(model);
+            return PartialView("_Create", model);
         }
 
         var wedding = await weddingService.GetByIdAsync(id, cancellationToken);

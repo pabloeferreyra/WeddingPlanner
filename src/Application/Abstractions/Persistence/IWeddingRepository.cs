@@ -4,6 +4,10 @@ namespace WeddingPlanner.Application.Abstractions.Persistence;
 
 public interface IWeddingRepository
 {
+    Task<Wedding?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Wedding>> GetAllAsync(CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Wedding>> GetUpcomingAsync(int limit, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default);

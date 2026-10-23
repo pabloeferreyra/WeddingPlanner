@@ -9,6 +9,25 @@ namespace WeddingPlanner.Infrastructure.Repositories;
 public sealed class WeddingRepository(ApplicationDbContext dbContext, 
 ILogger<WeddingRepository> logger) : IWeddingRepository
 {
+    public async Task<Wedding?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("Getting wedding with location {Id}", id);
+
+        return await dbContext.Weddings
+            .Include(wedding => wedding.Location)
+            .FirstOrDefaultAsync(wedding => wedding.Id == id, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Wedding>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("Getting all weddings with locations");
+
+        return await dbContext.Weddings
+            .AsNoTracking()
+            .Include(wedding => wedding.Location)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Wedding>> GetUpcomingAsync(
         int limit,
         CancellationToken cancellationToken = default)

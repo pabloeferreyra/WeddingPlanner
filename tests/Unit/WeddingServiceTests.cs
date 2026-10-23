@@ -30,6 +30,12 @@ public class WeddingServiceTests
 
     private sealed class StubWeddingRepository(IReadOnlyList<Wedding> weddings) : IWeddingRepository
     {
+        public Task<Wedding?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+            Task.FromResult(weddings.FirstOrDefault(wedding => wedding.Id == id));
+
+        public Task<IReadOnlyList<Wedding>> GetAllAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(weddings);
+
         public Task<IReadOnlyList<Wedding>> GetUpcomingAsync(int limit, CancellationToken cancellationToken = default) =>
             Task.FromResult(weddings);
 

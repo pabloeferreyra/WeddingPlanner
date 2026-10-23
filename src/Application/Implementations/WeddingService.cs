@@ -32,9 +32,11 @@ public sealed class WeddingService(IWeddingRepository weddingRepository,
         return await weddingRepository.GetByTitle(title, cancellationToken);
     }
 
-    public async Task<Wedding?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => await genericRepository.GetByIdAsync(id);
+    public async Task<Wedding?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        await weddingRepository.GetByIdAsync(id, cancellationToken);
 
-    public async Task<IEnumerable<Wedding>> GetAllAsync(CancellationToken cancellationToken = default) => await genericRepository.GetAllAsync();
+    public async Task<IEnumerable<Wedding>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        await weddingRepository.GetAllAsync(cancellationToken);
 
     public async Task<Wedding> AddAsync(Wedding wedding, CancellationToken cancellationToken = default) => await genericRepository.AddAsync(wedding);
 
