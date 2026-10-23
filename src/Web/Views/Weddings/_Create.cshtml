@@ -1,0 +1,16 @@
+@model WeddingPlanner.Web.Models.WeddingFormViewModel
+
+@{
+    ViewData["Title"] = "Crear boda";
+}
+
+<p class="eyebrow">Nueva celebración</p>
+<h1 class="mb-4">Crear boda</h1>
+
+<form asp-action="Create" method="post" class="card border-0 shadow-sm p-4">
+    <partial name="_FormFields" model="Model" />
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">Guardar boda</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</form>

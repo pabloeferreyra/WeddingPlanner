@@ -36,6 +36,9 @@ public sealed class CreateWeddingCommand
 
     [Required]
     [StringLength(20)]
+    [RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Codigo postal invalido.")]
+    [MinLength(4)]
+    [DataType(DataType.PostalCode)]
     public required string ZipCode { get; init; }
 
     [Range(0, int.MaxValue)]

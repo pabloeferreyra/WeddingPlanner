@@ -1,0 +1,55 @@
+@model WeddingPlanner.Web.Models.WeddingFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+<div class="row g-3">
+    <div class="col-12">
+        <label asp-for="Title" class="form-label"></label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="WeddingDate" class="form-label"></label>
+        <input asp-for="WeddingDate" type="date" class="form-control" />
+        <span asp-validation-for="WeddingDate" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="ExpectedGuestCount" class="form-label"></label>
+        <input asp-for="ExpectedGuestCount" class="form-control" min="0" />
+        <span asp-validation-for="ExpectedGuestCount" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="BrideName" class="form-label"></label>
+        <input asp-for="BrideName" class="form-control" />
+        <span asp-validation-for="BrideName" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="GroomName" class="form-label"></label>
+        <input asp-for="GroomName" class="form-control" />
+        <span asp-validation-for="GroomName" class="text-danger"></span>
+    </div>
+    <div class="col-12">
+        <label asp-for="Street" class="form-label"></label>
+        <input asp-for="Street" class="form-control" />
+        <span asp-validation-for="Street" class="text-danger"></span>
+    </div>
+    <div class="col-md-5">
+        <label asp-for="City" class="form-label"></label>
+        <input asp-for="City" class="form-control" />
+        <span asp-validation-for="City" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="State" class="form-label"></label>
+        <input asp-for="State" class="form-control" />
+        <span asp-validation-for="State" class="text-danger"></span>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="ZipCode" class="form-label"></label>
+        <input asp-for="ZipCode" class="form-control" />
+        <span asp-validation-for="ZipCode" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="InitialBudget" class="form-label"></label>
+        <input asp-for="InitialBudget" type="number" step="0.01" min="0.01" class="form-control" />
+        <span asp-validation-for="InitialBudget" class="text-danger"></span>
+    </div>
+</div>

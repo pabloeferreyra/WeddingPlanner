@@ -15,7 +15,11 @@ public sealed class WeddingService(IWeddingRepository weddingRepository,
 
         var weddings = await weddingRepository.GetUpcomingAsync(limit, cancellationToken);
 
-        return [.. weddings.Select(wedding => new WeddingSummary(wedding.Id, wedding.Title, wedding.WeddingDate, wedding.Location.ToString()))];
+        return [.. weddings.Select(wedding => new WeddingSummary(
+            wedding.Id,
+            wedding.Title!,
+            wedding.WeddingDate,
+            wedding.Location?.ToString() ?? "Location unavailable"))];
     }
 
     public async Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default)
