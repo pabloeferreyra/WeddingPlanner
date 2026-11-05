@@ -87,3 +87,10 @@ body {
 .wedding-card p, .empty-state p { color: var(--muted); margin: 0; }
 .empty-state { border: 1px dashed rgba(40, 51, 52, .25); margin-top: 1rem; padding: 2rem; text-align: center; }
 .empty-state h3 { font-size: 1.3rem; }
+
+.star-rating { direction: rtl; display: inline-flex; gap: .1rem; }
+.star-rating label { color: #adb5bd; cursor: pointer; font-size: 1.75rem; line-height: 1; }
+.star-rating input:checked ~ label,
+.star-rating label:hover,
+.star-rating label:hover ~ label { color: #e6a700; }
+.star-rating input:focus-visible + label { border-radius: .2rem; outline: 2px solid var(--ink); }

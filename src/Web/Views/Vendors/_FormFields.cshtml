@@ -1,0 +1,100 @@
+@model WeddingPlanner.Web.Models.VendorFormViewModel
+@using WeddingPlanner.Core.Domain.Enums
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+<div class="row g-3">
+    <div class="col-md-8">
+        <label asp-for="BusinessName" class="form-label">Nombre comercial</label>
+        <input asp-for="BusinessName" class="form-control" required maxlength="200" />
+        <span asp-validation-for="BusinessName" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="ServiceType" class="form-label">Tipo de servicio</label>
+        <select asp-for="ServiceType" asp-items="Html.GetEnumSelectList<VendorServiceType>()" class="form-select" required>
+        </select>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="ContactPerson" class="form-label">Persona de contacto</label>
+        <input asp-for="ContactPerson" class="form-control" maxlength="100" />
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Email" class="form-label">Correo electrónico</label>
+        <input asp-for="Email" type="email" class="form-control" required />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Phone.AreaCode" class="form-label">Código de área</label>
+        <input asp-for="Phone.AreaCode" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Phone.Number" class="form-label">Teléfono</label>
+        <input asp-for="Phone.Number" type="tel" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Website" class="form-label">Sitio web</label>
+        <input asp-for="Website" type="url" class="form-control" />
+        <span asp-validation-for="Website" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Address.Street" class="form-label">Calle y número</label>
+        <input asp-for="Address.Street" class="form-control" required />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Address.City" class="form-label">Ciudad</label>
+        <input asp-for="Address.City" class="form-control" required />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Address.State" class="form-label">Provincia / Estado</label>
+        <input asp-for="Address.State" class="form-control" required />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Address.ZipCode" class="form-label">Código postal</label>
+        <input asp-for="Address.ZipCode" class="form-control" required />
+    </div>
+    <fieldset class="col-md-6 border-0 p-0">
+        <legend class="form-label fs-6">Calificación promedio</legend>
+        <div class="d-flex align-items-center gap-3">
+            <div class="star-rating">
+                @for (var rating = 5; rating >= 1; rating--)
+                {
+                    var ratingId = $"rating-{rating}";
+                    var ratingLabel = rating == 1 ? "1 estrella" : $"{rating} estrellas";
+                    <input asp-for="AverageRating" type="radio" value="@rating" id="@ratingId" class="visually-hidden" aria-label="@ratingLabel" />
+                    <label for="@ratingId" title="@ratingLabel">★</label>
+                }
+            </div>
+            <div class="form-check">
+                <input asp-for="AverageRating" type="radio" value="0" id="rating-0" class="form-check-input" />
+                <label for="rating-0" class="form-check-label">Sin calificación</label>
+            </div>
+            @if (Model.AverageRating != decimal.Truncate(Model.AverageRating))
+            {
+                <div class="form-check">
+                    <input asp-for="AverageRating" type="radio" value="@Model.AverageRating" id="rating-current" class="form-check-input" />
+                    <label for="rating-current" class="form-check-label">Mantener actual (@Model.AverageRating.ToString("0.##") / 5)</label>
+                </div>
+            }
+        </div>
+        <span asp-validation-for="AverageRating" class="text-danger"></span>
+    </fieldset>
+    <div class="col-md-3">
+        <label asp-for="FacebookUrl" class="form-label">Facebook</label>
+        <input asp-for="FacebookUrl" type="url" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="InstagramUrl" class="form-label">Instagram</label>
+        <input asp-for="InstagramUrl" type="url" class="form-control" />
+    </div>
+    <div class="col-12">
+        <label asp-for="Description" class="form-label">Descripción</label>
+        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+    </div>
+    <div class="col-md-6 form-check ms-2">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label asp-for="IsActive" class="form-check-label">Proveedor activo</label>
+    </div>
+    <div class="col-md-5 form-check">
+        <input asp-for="IsFavorite" class="form-check-input" />
+        <label asp-for="IsFavorite" class="form-check-label">Marcar como favorito</label>
+    </div>
+</div>

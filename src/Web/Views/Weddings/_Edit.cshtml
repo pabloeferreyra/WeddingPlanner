@@ -11,7 +11,7 @@
     <partial name="_FormFields" model="Model" />
     <div class="d-flex gap-2 mt-4">
         <button type="submit" class="btn btn-primary">Guardar cambios</button>
-        <a asp-action="Details" asp-route-id="@Context.Request.RouteValues["id"]" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="button" class="btn btn-outline-secondary" data-close-modal>Cancelar</button>
     </div>
 </form>
 

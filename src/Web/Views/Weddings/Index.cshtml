@@ -18,58 +18,11 @@
                     data-title="Nueva celebración"
                     type="button">Crear boda</button>
 </section>
+<div class="back container-fluid" id="WeddingsPartial">
 
-@if (!Model.Any())
-{
-    <div class="empty-state">
-        <h2>Aún no hay bodas registradas</h2>
-        <p>Crea una celebración para empezar a organizarla.</p>
-        <button class="btn btn-primary mt-3" data-open-modal 
-                data-modal-id="GlobalModal"
-                data-url="@modalCreate" 
-                data-title="Nueva celebración"
-                type="button">Crear primera boda</button>
-    </div>
-}
-else
-{
-    <div class="table-responsive">
-        <table id="weddingsTable" class="table align-middle">
-            <thead>
-                <tr>
-                    <th scope="col">Boda</th>
-                    <th scope="col">Fecha</th>
-                    <th scope="col">Lugar</th>
-                    <th scope="col">Invitados</th>
-                    <th scope="col">Presupuesto</th>
-                    <th scope="col"><span class="visually-hidden">Acciones</span></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var wedding in Model)
-                {
-                    <tr>
-                        <th scope="row">
-                            <a asp-action="Details" asp-route-id="@wedding.Id">@wedding.Title</a>
-                        </th>
-                        <td>@wedding.WeddingDate.ToString("d")</td>
-                        <td>@(wedding.Location?.ToString() ?? "Por confirmar")</td>
-                        <td>@wedding.ExpectedGuestCount</td>
-                        <td>@wedding.InitialBudget.ToString("C")</td>
-                        <td class="text-nowrap">
-                            <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@wedding.Id">Editar</a>
-                            <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@wedding.Id">Eliminar</a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-    <nav>
-        <ul id="weddingPagination" class="pagination">
-        </ul>
-    </nav>
-}
+            <partial name="_Table" />
+    
+</div>
 
 @section Scripts {
     <script src="~/js/weddings.js" asp-append-version="true"></script>

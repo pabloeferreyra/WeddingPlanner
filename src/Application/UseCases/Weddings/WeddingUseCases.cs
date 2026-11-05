@@ -106,8 +106,10 @@ public sealed record GetWeddingByIdQuery(Guid Id);
 
 public sealed class GetWeddingByIdHandler(IWeddingService service)
 {
-    public Task<Wedding?> HandleAsync(GetWeddingByIdQuery query) =>
-        service.GetByIdAsync(query.Id);
+    public Task<Wedding?> HandleAsync(
+        GetWeddingByIdQuery query,
+        CancellationToken cancellationToken = default) =>
+        service.GetByIdAsync(query.Id, cancellationToken);
 }
 
 public sealed record GetWeddingByTitleQuery(string Title);

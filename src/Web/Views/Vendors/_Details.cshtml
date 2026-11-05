@@ -1,0 +1,34 @@
+@model WeddingPlanner.Core.Domain.Entities.Vendor
+
+<div class="mb-3">
+    <p class="eyebrow">Detalle del proveedor</p>
+    <h2>@Model.BusinessName</h2>
+</div>
+
+<dl class="row">
+    <dt class="col-sm-4">Servicio</dt>
+    <dd class="col-sm-8">@Model.ServiceType</dd>
+    <dt class="col-sm-4">Persona de contacto</dt>
+    <dd class="col-sm-8">@(Model.ContactPerson ?? "No informado")</dd>
+    <dt class="col-sm-4">Correo electrónico</dt>
+    <dd class="col-sm-8">@(Model.Email ?? "No informado")</dd>
+    <dt class="col-sm-4">Teléfono</dt>
+    <dd class="col-sm-8">@(Model.Phone?.ToString() ?? "No informado")</dd>
+    <dt class="col-sm-4">Dirección</dt>
+    <dd class="col-sm-8">@Model.Address</dd>
+    <dt class="col-sm-4">Sitio web</dt>
+    <dd class="col-sm-8">@(Model.Website ?? "No informado")</dd>
+    <dt class="col-sm-4">Calificación promedio</dt>
+    <dd class="col-sm-8">@Model.AverageRating.ToString("0.0") / 5</dd>
+    <dt class="col-sm-4">Estado</dt>
+    <dd class="col-sm-8">@(Model.IsActive ? "Activo" : "Inactivo")</dd>
+    <dt class="col-sm-4">Favorito</dt>
+    <dd class="col-sm-8">@(Model.IsFavorite ? "Sí" : "No")</dd>
+    <dt class="col-sm-4">Descripción</dt>
+    <dd class="col-sm-8">@(Model.Description ?? "Sin descripción")</dd>
+    <dt class="col-sm-4">Facebook</dt>
+    <dd class="col-sm-8">@(Model.FacebookUrl ?? "No informado")</dd>
+    <dt class="col-sm-4">Instagram</dt>
+    <dd class="col-sm-8">@(Model.InstagramUrl ?? "No informado")</dd>
+</dl>
+<button type="button" class="btn btn-outline-secondary" data-close-modal>Cerrar</button>

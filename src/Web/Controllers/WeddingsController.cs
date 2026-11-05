@@ -1,21 +1,39 @@
 using Microsoft.AspNetCore.Mvc;
-using WeddingPlanner.Application.Abstractions.Services;
 using WeddingPlanner.Application.UseCases.Weddings;
 using WeddingPlanner.Core.Domain.Entities;
+using WeddingPlanner.Web.Helpers;
 using WeddingPlanner.Web.Models;
 
 namespace WeddingPlanner.Web.Controllers;
 
 [Route("Weddings")]
 public sealed class WeddingsController(
-    IWeddingService weddingService,
-    CreateWeddingHandler createWeddingHandler) : Controller
+    CreateWeddingHandler createWeddingHandler,
+    GetAllWeddingsHandler getAllWeddingsHandler,
+    GetWeddingByIdHandler getWeddingByIdHandler,
+    UpdateWeddingHandler updateWeddingHandler,
+    DeleteWeddingHandler deleteWeddingHandler) : Controller
 {
     [HttpGet("")]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
-        var weddings = await weddingService.GetAllAsync(cancellationToken);
-        return View(weddings.OrderBy(wedding => wedding.WeddingDate));
+        return View();
+    }
+
+    [HttpPost("InitializeTable")]
+    public async Task<IActionResult> InitializeTable(CancellationToken cancellationToken)
+    {
+        var (draw, pageSize, skip) = DataTablesHelper.GetDataTableParams(Request);
+        var weddings = await getAllWeddingsHandler.HandleAsync(cancellationToken);
+        return Json(new
+        {
+            data = DataTablesHelper.ApplyPaging(
+                DataTablesHelper.ApplySorting(
+                    weddings.OrderBy(wedding => wedding.WeddingDate).ToList(),
+                    Request),
+                pageSize,
+                skip)
+        });
     }
 
     [HttpGet("Create")]
@@ -50,15 +68,19 @@ public sealed class WeddingsController(
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
-        var wedding = await weddingService.GetByIdAsync(id, cancellationToken);
+        var wedding = await getWeddingByIdHandler.HandleAsync(
+            new GetWeddingByIdQuery(id),
+            cancellationToken);
         return wedding is null ? NotFound() : View(wedding);
     }
 
     [HttpGet("{id:guid}/Edit")]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
-        var wedding = await weddingService.GetByIdAsync(id, cancellationToken);
-        return wedding is null ? NotFound() : View(ToFormModel(wedding));
+        var wedding = await getWeddingByIdHandler.HandleAsync(
+            new GetWeddingByIdQuery(id),
+            cancellationToken);
+        return wedding is null ? NotFound() : PartialView("_Edit", ToFormModel(wedding));
     }
 
     [HttpPost("{id:guid}/Edit")]
@@ -73,7 +95,9 @@ public sealed class WeddingsController(
             return PartialView("_Create", model);
         }
 
-        var wedding = await weddingService.GetByIdAsync(id, cancellationToken);
+        var wedding = await getWeddingByIdHandler.HandleAsync(
+            new GetWeddingByIdQuery(id),
+            cancellationToken);
         if (wedding is null)
         {
             return NotFound();
@@ -103,14 +127,16 @@ public sealed class WeddingsController(
         wedding.ExpectedGuestCount = model.ExpectedGuestCount;
         wedding.InitialBudget = model.InitialBudget;
 
-        await weddingService.UpdateAsync(wedding, cancellationToken);
+        await updateWeddingHandler.HandleAsync(new UpdateWeddingCommand(wedding), cancellationToken);
         return RedirectToAction(nameof(Details), new { id });
     }
 
     [HttpGet("{id:guid}/Delete")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var wedding = await weddingService.GetByIdAsync(id, cancellationToken);
+        var wedding = await getWeddingByIdHandler.HandleAsync(
+            new GetWeddingByIdQuery(id),
+            cancellationToken);
         return wedding is null ? NotFound() : View(wedding);
     }
 
@@ -118,13 +144,15 @@ public sealed class WeddingsController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(Guid id, CancellationToken cancellationToken)
     {
-        var wedding = await weddingService.GetByIdAsync(id, cancellationToken);
+        var wedding = await getWeddingByIdHandler.HandleAsync(
+            new GetWeddingByIdQuery(id),
+            cancellationToken);
         if (wedding is null)
         {
             return NotFound();
         }
 
-        await weddingService.DeleteAsync(id, cancellationToken);
+        await deleteWeddingHandler.HandleAsync(new DeleteWeddingCommand(id), cancellationToken);
         return RedirectToAction(nameof(Index));
     }
 

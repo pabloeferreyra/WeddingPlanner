@@ -1,0 +1,11 @@
+@model WeddingPlanner.Core.Domain.Entities.Vendor
+
+<p>¿Quieres eliminar al proveedor <strong>@Model.BusinessName</strong>? Esta acción no se puede deshacer.</p>
+<p class="text-muted">@Model.ServiceType · @Model.Address.City</p>
+
+<form asp-action="Delete" asp-route-id="@Model.Id" method="post" id="deleteVendorForm">
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-danger">Eliminar proveedor</button>
+        <button type="button" class="btn btn-outline-secondary" data-close-modal>Cancelar</button>
+    </div>
+</form>

@@ -1,0 +1,9 @@
+@model WeddingPlanner.Web.Models.VendorFormViewModel
+
+<form asp-action="Create" method="post" id="createVendorForm">
+    <partial name="_FormFields" model="Model" />
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">Guardar proveedor</button>
+        <button type="button" class="btn btn-outline-secondary" data-close-modal>Cancelar</button>
+    </div>
+</form>
