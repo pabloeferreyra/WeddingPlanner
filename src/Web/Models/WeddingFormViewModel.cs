@@ -2,8 +2,23 @@ using System.ComponentModel.DataAnnotations;
 
 namespace WeddingPlanner.Web.Models;
 
-public sealed class WeddingFormViewModel
+public sealed class WeddingFormViewModel : IValidatableObject
 {
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (IsWedding)
+        {
+            if (string.IsNullOrWhiteSpace(BrideName))
+                yield return new ValidationResult("El nombre de la novia es obligatorio.", [nameof(BrideName)]);
+            if (string.IsNullOrWhiteSpace(GroomName))
+                yield return new ValidationResult("El nombre del novio es obligatorio.", [nameof(GroomName)]);
+        }
+        else if (string.IsNullOrWhiteSpace(CelebratedName))
+        {
+            yield return new ValidationResult("El nombre del festejado/a es obligatorio.", [nameof(CelebratedName)]);
+        }
+    }
+
     [Required(ErrorMessage = "El título es obligatorio.")]
     [StringLength(150)]
     [Display(Name = "Título")]
@@ -11,18 +26,47 @@ public sealed class WeddingFormViewModel
 
     [Required(ErrorMessage = "La fecha es obligatoria.")]
     [DataType(DataType.Date)]
-    [Display(Name = "Fecha de la boda")]
-    public DateTime WeddingDate { get; set; } = DateTime.Today;
+    [Display(Name = "Fecha de la evento")]
+    public DateOnly WeddingDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
 
-    [Required(ErrorMessage = "El nombre de la novia es obligatorio.")]
+    [Display(Name = "Es una boda")]
+    public bool IsWedding { get; set; } = true;
+
     [StringLength(100)]
     [Display(Name = "Nombre de la novia")]
     public string BrideName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "El nombre del novio es obligatorio.")]
+    [EmailAddress]
+    [Display(Name = "Email de la novia")]
+    public string? BrideEmail { get; set; }
+
+    [Phone]
+    [Display(Name = "Teléfono de la novia")]
+    public string? BridePhone { get; set; }
+
     [StringLength(100)]
     [Display(Name = "Nombre del novio")]
     public string GroomName { get; set; } = string.Empty;
+
+    [EmailAddress]
+    [Display(Name = "Email del novio")]
+    public string? GroomEmail { get; set; }
+
+    [Phone]
+    [Display(Name = "Teléfono del novio")]
+    public string? GroomPhone { get; set; }
+
+    [StringLength(100)]
+    [Display(Name = "Nombre del festejado/a")]
+    public string CelebratedName { get; set; } = string.Empty;
+
+    [EmailAddress]
+    [Display(Name = "Email del festejado/a")]
+    public string? CelebratedEmail { get; set; }
+
+    [Phone]
+    [Display(Name = "Teléfono del festejado/a")]
+    public string? CelebratedPhone { get; set; }
 
     [Required(ErrorMessage = "La calle es obligatoria.")]
     [StringLength(200)]

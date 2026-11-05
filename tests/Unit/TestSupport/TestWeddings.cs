@@ -9,15 +9,15 @@ public static class TestWeddings
 {
     public static Wedding Create(
         string title,
-        DateTime weddingDate,
+        DateOnly weddingDate,
         string city = "Buenos Aires",
         int expectedGuestCount = 80,
         decimal initialBudget = 25000m) => new()
     {
         Title = title,
         WeddingDate = weddingDate,
-        BrideName = "Ana",
-        GroomName = "Luis",
+        Bride = new Person { Name = "Ana" },
+        Groom = new Person { Name = "Luis" },
         Location = new Address
         {
             Street = "Calle 1",

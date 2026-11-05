@@ -9,7 +9,7 @@ using WeddingPlanner.Infrastructure.Data;
 
 #nullable disable
 
-namespace WeddingPlanner.Infrastructure.Data.Migrations
+namespace WeddingPlanner.Web.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     [Migration("20261004013514_InitialCreate")]

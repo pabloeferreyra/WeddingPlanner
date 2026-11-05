@@ -9,7 +9,7 @@ public class GetWeddingByIdHandlerTests
     public async Task HandleAsync_returns_wedding_when_it_exists()
     {
         var service = new InMemoryWeddingService();
-        var wedding = TestWeddings.Create("Ana y Luis", new DateTime(2027, 6, 12));
+        var wedding = TestWeddings.Create("Ana y Luis", new DateOnly(2027, 6, 12));
         service.Weddings.Add(wedding);
         var handler = new GetWeddingByIdHandler(service);
 
@@ -19,7 +19,7 @@ public class GetWeddingByIdHandlerTests
         result.Should().NotBeNull();
         result!.Id.Should().Be(wedding.Id);
         result.Title.Should().Be("Ana y Luis");
-        result.WeddingDate.Should().Be(new DateTime(2027, 6, 12));
+        result.WeddingDate.Should().Be(new DateOnly(2027, 6, 12));
     }
 
     [Fact]

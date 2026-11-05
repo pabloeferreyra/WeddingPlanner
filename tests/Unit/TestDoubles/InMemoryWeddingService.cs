@@ -13,7 +13,7 @@ public sealed class InMemoryWeddingService : IWeddingService
     public List<Wedding> Weddings { get; } = [];
 
     public Guid? LastQueriedId { get; private set; }
-    public DateTime? LastQueriedDate { get; private set; }
+    public DateOnly? LastQueriedDate { get; private set; }
     public string? LastQueriedTitle { get; private set; }
     public int? LastUpcomingLimit { get; private set; }
     public Wedding? LastUpdatedWedding { get; private set; }
@@ -35,12 +35,12 @@ public sealed class InMemoryWeddingService : IWeddingService
         return Task.FromResult(Weddings.FirstOrDefault(wedding => wedding.Id == id));
     }
 
-    public Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default)
     {
         LastQueriedDate = date;
 
         IReadOnlyList<Wedding> result = Weddings
-            .Where(wedding => wedding.WeddingDate == date.Date)
+            .Where(wedding => wedding.WeddingDate == date)
             .OrderBy(wedding => wedding.WeddingDate)
             .ToList();
 
@@ -62,7 +62,7 @@ public sealed class InMemoryWeddingService : IWeddingService
     {
         LastUpcomingLimit = limit;
 
-        var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Unspecified);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         IReadOnlyList<WeddingSummary> result = Weddings
             .Where(wedding => wedding.WeddingDate >= today)

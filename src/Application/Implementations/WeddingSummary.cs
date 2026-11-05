@@ -3,5 +3,5 @@ namespace WeddingPlanner.Application.Implementations;
 public sealed record WeddingSummary(
     Guid Id,
     string Name,
-    DateTime Date,
+    DateOnly Date,
     string Venue);

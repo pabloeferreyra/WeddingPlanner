@@ -13,9 +13,9 @@ public class WeddingServiceTests
         var wedding = new Wedding
         {
             Title = "Ana y Luis",
-            WeddingDate = DateTime.UtcNow.Date.AddDays(1),
-            BrideName = "Ana",
-            GroomName = "Luis",
+            WeddingDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1),
+            Bride = new Person { Name = "Ana" },
+            Groom = new Person { Name = "Luis" },
             Location = null
         };
         var service = new WeddingService(
@@ -39,7 +39,7 @@ public class WeddingServiceTests
         public Task<IReadOnlyList<Wedding>> GetUpcomingAsync(int limit, CancellationToken cancellationToken = default) =>
             Task.FromResult(weddings);
 
-        public Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default) =>
+        public Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
         public Task<IReadOnlyList<Wedding>?> GetByTitle(string title, CancellationToken cancellationToken = default) =>

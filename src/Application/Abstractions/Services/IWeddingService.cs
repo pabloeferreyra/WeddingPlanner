@@ -11,7 +11,7 @@ public interface IWeddingService
     
     Task<Wedding?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Wedding>?> GetByTitleAsync(string title, CancellationToken cancellationToken = default);
     

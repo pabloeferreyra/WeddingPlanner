@@ -9,11 +9,11 @@ using WeddingPlanner.Infrastructure.Data;
 
 #nullable disable
 
-namespace WeddingPlanner.Infrastructure.Data.Migrations
+namespace WeddingPlanner.Web.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20261018000014_NombreMigracion")]
-    partial class NombreMigracion
+    [Migration("20261105210753_WeddingPeople")]
+    partial class WeddingPeople
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -199,7 +199,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<decimal>("CurrentSpent")
                         .HasColumnType("numeric");
@@ -208,7 +208,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<Guid>("WeddingId")
                         .HasColumnType("uuid");
@@ -227,10 +227,10 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -266,7 +266,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -274,7 +274,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("ExpenseDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<bool>("IsRecurring")
                         .HasColumnType("boolean");
@@ -284,7 +284,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.Property<DateTime?>("PaymentDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("ReceiptUrl")
                         .HasColumnType("text");
@@ -310,7 +310,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -344,7 +344,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("RSVPDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int>("RSVPStatus")
                         .HasColumnType("integer");
@@ -375,7 +375,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<bool>("IsRead")
                         .HasColumnType("boolean");
@@ -386,7 +386,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.Property<DateTime?>("ReadAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -440,17 +440,17 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
                     b.Property<DateTime>("DueDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int>("EstimatedHours")
                         .HasColumnType("integer");
@@ -467,7 +467,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<Guid>("WeddingId")
                         .HasColumnType("uuid");
@@ -494,10 +494,10 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
@@ -523,7 +523,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("ScheduledDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<Guid>("WeddingId")
                         .HasColumnType("uuid");
@@ -550,7 +550,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -638,7 +638,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -684,13 +684,13 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("ContractDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime?>("ContractEndDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<decimal>("DepositPaid")
                         .HasColumnType("numeric");
@@ -715,7 +715,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<Guid>("VendorId")
                         .HasColumnType("uuid");
@@ -747,7 +747,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("ExpiryDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<long>("FileSizeBytes")
                         .HasColumnType("bigint");
@@ -757,7 +757,7 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("UploadedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<Guid?>("VendorAssignmentId")
                         .HasColumnType("uuid");
@@ -780,24 +780,14 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("BrideEmail")
-                        .HasColumnType("text");
-
-                    b.Property<string>("BrideName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("BridePhone")
-                        .HasColumnType("text");
-
                     b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("CoordinatorId")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -805,18 +795,11 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                     b.Property<int>("ExpectedGuestCount")
                         .HasColumnType("integer");
 
-                    b.Property<string>("GroomEmail")
-                        .HasColumnType("text");
-
-                    b.Property<string>("GroomName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("GroomPhone")
-                        .HasColumnType("text");
-
                     b.Property<decimal>("InitialBudget")
                         .HasColumnType("numeric");
+
+                    b.Property<bool>("IsWedding")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid>("LocationId")
                         .HasColumnType("uuid");
@@ -832,10 +815,10 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(150)");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
-                    b.Property<DateTime>("WeddingDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("WeddingDate")
+                        .HasColumnType("date");
 
                     b.HasKey("Id");
 
@@ -1064,7 +1047,82 @@ namespace WeddingPlanner.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.OwnsOne("WeddingPlanner.Core.Domain.Entities.Person", "Bride", b1 =>
+                        {
+                            b1.Property<Guid>("WeddingId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Email")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Phone")
+                                .HasColumnType("text");
+
+                            b1.HasKey("WeddingId");
+
+                            b1.ToTable("Weddings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("WeddingId");
+                        });
+
+                    b.OwnsOne("WeddingPlanner.Core.Domain.Entities.Person", "Celebrated", b1 =>
+                        {
+                            b1.Property<Guid>("WeddingId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Email")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Phone")
+                                .HasColumnType("text");
+
+                            b1.HasKey("WeddingId");
+
+                            b1.ToTable("Weddings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("WeddingId");
+                        });
+
+                    b.OwnsOne("WeddingPlanner.Core.Domain.Entities.Person", "Groom", b1 =>
+                        {
+                            b1.Property<Guid>("WeddingId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Email")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Phone")
+                                .HasColumnType("text");
+
+                            b1.HasKey("WeddingId");
+
+                            b1.ToTable("Weddings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("WeddingId");
+                        });
+
+                    b.Navigation("Bride");
+
+                    b.Navigation("Celebrated");
+
                     b.Navigation("Coordinator");
+
+                    b.Navigation("Groom");
 
                     b.Navigation("Location");
                 });

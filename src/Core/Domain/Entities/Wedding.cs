@@ -14,7 +14,8 @@ public class Wedding
     public string? Description { get; set; }
 
     [Required]
-    public DateTime WeddingDate { get; set; }
+    [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy}", ApplyFormatInEditMode = true)]
+    public DateOnly WeddingDate { get; set; }
 
     [Required(ErrorMessage = "Location is required")]
     public Address? Location { get; set; }
@@ -26,17 +27,12 @@ public class Wedding
 
     public WeddingStatus Status { get; set; } = WeddingStatus.Planning;
 
-    // Bride & Groom
-    [Required]
-    public string? BrideName { get; set; }
+    // Used when IsWedding is true
+    public Person? Bride { get; set; }
+    public Person? Groom { get; set; }
 
-    [Required]
-    public string? GroomName { get; set; }
-
-    public string? BrideEmail { get; set; }
-    public string? GroomEmail { get; set; }
-    public string? BridePhone { get; set; }
-    public string? GroomPhone { get; set; }
+    // Used when IsWedding is false
+    public Person? Celebrated { get; set; }
 
     // Coordinator (Foreign Key)
     public string? CoordinatorId { get; set; }
@@ -53,4 +49,6 @@ public class Wedding
     public ICollection<Budget> Budgets { get; set; } = [];
     public ICollection<Timeline> Timelines { get; set; } = [];
     public ICollection<TaskItem> Tasks { get; set; } = [];
+    public bool IsWedding {get; set; } = true;
+    
 }

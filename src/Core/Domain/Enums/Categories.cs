@@ -34,7 +34,7 @@ public enum ExpenseCategory
 
 public enum TimelineCategory
 {
-    PreWedding,      // Antes de la boda
+    PreWedding,      // Antes de la evento
     DayOfEvent,      // Día del evento
-    PostWedding      // Después de la boda
+    PostWedding      // Después de la evento
 }

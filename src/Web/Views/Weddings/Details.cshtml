@@ -1,7 +1,7 @@
 @model WeddingPlanner.Core.Domain.Entities.Wedding
 
 @{
-    ViewData["Title"] = Model.Title ?? "Detalle de la boda";
+    ViewData["Title"] = Model.Title ?? "Detalle de la evento";
 }
 
 <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
@@ -18,10 +18,18 @@
 <dl class="row card border-0 shadow-sm p-4">
     <dt class="col-sm-4">Fecha</dt>
     <dd class="col-sm-8">@Model.WeddingDate.ToString("D")</dd>
-    <dt class="col-sm-4">Novia</dt>
-    <dd class="col-sm-8">@Model.BrideName</dd>
-    <dt class="col-sm-4">Novio</dt>
-    <dd class="col-sm-8">@Model.GroomName</dd>
+    @if (Model.IsWedding)
+    {
+        <dt class="col-sm-4">Novia</dt>
+        <dd class="col-sm-8">@Model.Bride?.Name</dd>
+        <dt class="col-sm-4">Novio</dt>
+        <dd class="col-sm-8">@Model.Groom?.Name</dd>
+    }
+    else
+    {
+        <dt class="col-sm-4">Festejado/a</dt>
+        <dd class="col-sm-8">@Model.Celebrated?.Name</dd>
+    }
     <dt class="col-sm-4">Lugar</dt>
     <dd class="col-sm-8">@(Model.Location?.ToString() ?? "Por confirmar")</dd>
     <dt class="col-sm-4">Invitados esperados</dt>

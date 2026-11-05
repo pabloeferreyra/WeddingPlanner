@@ -5,6 +5,11 @@ using WeddingPlanner.Core.Domain.Entities;
 
 namespace WeddingPlanner.Application.UseCases.Weddings;
 
+public sealed record PersonInfo(string? Name, string? Email = null, string? Phone = null)
+{
+    public Person ToEntity() => new() { Name = Name, Email = Email, Phone = Phone };
+}
+
 public sealed class CreateWeddingCommand
 {
     [Required]
@@ -12,15 +17,14 @@ public sealed class CreateWeddingCommand
     public required string Title { get; init; }
 
     [Required]
-    public required DateTime WeddingDate { get; init; }
+    [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy}", ApplyFormatInEditMode = true)]
+    public required DateOnly WeddingDate { get; init; }
 
-    [Required]
-    [StringLength(100)]
-    public required string BrideName { get; init; }
+    public bool IsWedding { get; init; } = true;
 
-    [Required]
-    [StringLength(100)]
-    public required string GroomName { get; init; }
+    public PersonInfo? Bride { get; init; }
+    public PersonInfo? Groom { get; init; }
+    public PersonInfo? Celebrated { get; init; }
 
     [Required]
     [StringLength(200)]
@@ -56,8 +60,10 @@ public sealed class CreateWeddingHandler(IWeddingService weddingService)
         {
             Title = command.Title,
             WeddingDate = command.WeddingDate,
-            BrideName = command.BrideName,
-            GroomName = command.GroomName,
+            IsWedding = command.IsWedding,
+            Bride = command.IsWedding ? command.Bride?.ToEntity() : null,
+            Groom = command.IsWedding ? command.Groom?.ToEntity() : null,
+            Celebrated = command.IsWedding ? null : command.Celebrated?.ToEntity(),
             Location = new Address
             {
                 Street = command.Street,
@@ -92,7 +98,7 @@ public sealed class GetUpcomingWeddingsHandler(IWeddingService service)
         service.GetUpcomingAsync(query.Limit);
 }
 
-public sealed record GetWeddingByDateQuery(DateTime Date);
+public sealed record GetWeddingByDateQuery(DateOnly Date);
 
 public sealed class GetWeddingByDateHandler(IWeddingService weddingService)
 {

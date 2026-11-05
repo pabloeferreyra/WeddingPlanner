@@ -9,7 +9,7 @@ public class GetUpcomingWeddingsHandlerTests
     public async Task Handle_forwards_limit_and_returns_only_upcoming_weddings_ordered_by_date()
     {
         var service = new InMemoryWeddingService();
-        var today = DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var soon = TestWeddings.Create("Soon", today.AddDays(1));
         var later = TestWeddings.Create("Later", today.AddDays(2));
         service.Weddings.Add(later);
@@ -30,7 +30,7 @@ public class GetUpcomingWeddingsHandlerTests
     public async Task Handle_maps_weddings_to_summaries_correctly()
     {
         var service = new InMemoryWeddingService();
-        var date = DateTime.UtcNow.Date.AddDays(7);
+        var date = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(7);
         var wedding = TestWeddings.Create("Ana y Luis", date);
         service.Weddings.Add(wedding);
         var handler = new GetUpcomingWeddingsHandler(service);
@@ -48,7 +48,7 @@ public class GetUpcomingWeddingsHandlerTests
     public async Task Handle_excludes_past_weddings()
     {
         var service = new InMemoryWeddingService();
-        var today = DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         service.Weddings.Add(TestWeddings.Create("Past", today.AddDays(-1)));
         service.Weddings.Add(TestWeddings.Create("Future", today.AddDays(1)));
         var handler = new GetUpcomingWeddingsHandler(service);
@@ -65,7 +65,7 @@ public class GetUpcomingWeddingsHandlerTests
     public async Task Handle_limits_results_to_requested_limit(int limit, int expectedCount)
     {
         var service = new InMemoryWeddingService();
-        var today = DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         service.Weddings.Add(TestWeddings.Create("Soon", today.AddDays(1)));
         service.Weddings.Add(TestWeddings.Create("Later", today.AddDays(2)));
         service.Weddings.Add(TestWeddings.Create("Much later", today.AddDays(3)));

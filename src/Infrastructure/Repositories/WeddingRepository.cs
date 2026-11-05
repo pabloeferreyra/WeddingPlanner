@@ -34,7 +34,7 @@ ILogger<WeddingRepository> logger) : IWeddingRepository
     {
         logger.LogDebug("Getting the next {Limit} upcoming weddings", limit);
 
-        var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Unspecified);
+        var today = DateOnly.FromDateTime(DateTime.Today);
 
         var weddings = await dbContext.Weddings
             .AsNoTracking()
@@ -48,18 +48,18 @@ ILogger<WeddingRepository> logger) : IWeddingRepository
         return weddings;
     }
 
-    public async Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default)
     {
-        var specifiedDate = DateTime.SpecifyKind(date.Date, DateTimeKind.Unspecified);
+       
 
-        logger.LogDebug("Getting weddings by date {Date}", specifiedDate);
+        logger.LogDebug("Getting weddings by date {Date}", date);
 
         var weddings = await dbContext.Weddings
             .AsNoTracking()
-            .Where(wedding => wedding.WeddingDate == specifiedDate)
+            .Where(wedding => wedding.WeddingDate == date)
             .ToListAsync(cancellationToken);
 
-        logger.LogDebug("Retrieved {Count} weddings on {Date}", weddings?.Count ?? 0, specifiedDate);
+        logger.LogDebug("Retrieved {Count} weddings on {Date}", weddings?.Count ?? 0, date);
 
         return weddings;
     }

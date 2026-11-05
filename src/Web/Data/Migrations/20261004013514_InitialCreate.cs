@@ -3,7 +3,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace WeddingPlanner.Infrastructure.Data.Migrations
+namespace WeddingPlanner.Web.Data.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

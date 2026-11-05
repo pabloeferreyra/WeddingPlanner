@@ -13,9 +13,9 @@ public class CreateWeddingHandlerTests
         var command = new CreateWeddingCommand
         {
             Title = "Ana y Luis",
-            WeddingDate = new DateTime(2027, 6, 12),
-            BrideName = "Ana",
-            GroomName = "Luis",
+            WeddingDate = new DateOnly(2027, 6, 12),
+            Bride = new PersonInfo("Ana"),
+            Groom = new PersonInfo("Luis"),
             Street = "Calle 1",
             City = "Buenos Aires",
             State = "CABA",
@@ -32,8 +32,8 @@ public class CreateWeddingHandlerTests
         savedWedding.Id.Should().Be(weddingId);
         savedWedding.Title.Should().Be(command.Title);
         savedWedding.WeddingDate.Should().Be(command.WeddingDate);
-        savedWedding.BrideName.Should().Be(command.BrideName);
-        savedWedding.GroomName.Should().Be(command.GroomName);
+        savedWedding.Bride!.Name.Should().Be("Ana");
+        savedWedding.Groom!.Name.Should().Be("Luis");
         savedWedding.Location.Should().BeEquivalentTo(new
         {
             command.Street,

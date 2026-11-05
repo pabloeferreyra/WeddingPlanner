@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace WeddingPlanner.Infrastructure.Data.Migrations
+namespace WeddingPlanner.Web.Data.Migrations
 {
     /// <inheritdoc />
     public partial class NombreMigracion : Migration

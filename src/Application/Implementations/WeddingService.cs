@@ -22,7 +22,7 @@ public sealed class WeddingService(IWeddingRepository weddingRepository,
             wedding.Location?.ToString() ?? "Location unavailable"))];
     }
 
-    public async Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default)
     {
         return await weddingRepository.GetByDateAsync(date, cancellationToken);
     }

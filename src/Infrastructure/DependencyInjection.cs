@@ -19,7 +19,8 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            options.UseNpgsql(connectionString, provider =>
+                provider.MigrationsAssembly("WeddingPlanner.Web")));
         services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IAddressService, AddressService>();
         services.AddScoped<IChecklistItemService, ChecklistItemService>();

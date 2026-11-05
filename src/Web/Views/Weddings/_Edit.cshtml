@@ -1,11 +1,11 @@
 @model WeddingPlanner.Web.Models.WeddingFormViewModel
 
 @{
-    ViewData["Title"] = "Editar boda";
+    ViewData["Title"] = "Editar evento";
 }
 
 <p class="eyebrow">Actualizar celebración</p>
-<h1 class="mb-4">Editar boda</h1>
+<h1 class="mb-4">Editar evento</h1>
 
 <form asp-action="Edit" asp-route-id="@Context.Request.RouteValues["id"]" method="post" class="card border-0 shadow-sm p-4">
     <partial name="_FormFields" model="Model" />

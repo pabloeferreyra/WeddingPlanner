@@ -75,13 +75,13 @@
 
         if (!rows.length) {
             tbody.innerHTML = '<div class="empty-state">' +
-                '<h2>Aún no hay bodas registradas</h2>' +
+                '<h2>Aún no hay eventos registradas</h2>' +
                 '<p>Crea una celebración para empezar a organizarla.</p>' +
                 '<button class="btn btn-primary mt-3" data-open-modal ' +
                 'data-modal-id="GlobalModal" ' +
                 'data-url="/Weddings/Create" ' +
                 'data-title="Nueva celebración" ' +
-                'type="button">Crear primera boda</button>' +
+                'type="button">Crear primera evento</button>' +
                 '</div>';
             return;
         }
@@ -110,7 +110,7 @@
             tbody.insertAdjacentHTML("beforeend", `
                 <tr>
                     <td>${escapeHTML(d.title)}</td>
-                    <td>${escapeHTML(d.weddingDate)}</td>
+                    <td>${escapeHTML(formatDate(d.weddingDate))}</td>
                     <td>${escapeHTML(location)}</td>
                     <td>${escapeHTML(d.expectedGuestCount)}</td>
                     <td>${escapeHTML(d.initialBudget)}</td>
@@ -124,6 +124,11 @@
         const div = document.createElement("div");
         div.textContent = t ?? "";
         return div.innerHTML;
+    }
+
+    function formatDate(value) {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? "");
+        return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
     }
 
     function initCreateWeddingModal() {
@@ -145,7 +150,7 @@
                     "createWeddingForm",
                     "POST",
                     "/Weddings/Create",
-                    "Nueva boda",
+                    "Nueva evento",
                     true,
                     false
                 )

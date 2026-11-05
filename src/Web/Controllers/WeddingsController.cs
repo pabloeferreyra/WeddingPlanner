@@ -52,8 +52,10 @@ public sealed class WeddingsController(
         {
             Title = model.Title,
             WeddingDate = model.WeddingDate,
-            BrideName = model.BrideName,
-            GroomName = model.GroomName,
+            IsWedding = model.IsWedding,
+            Bride = new PersonInfo(model.BrideName, model.BrideEmail, model.BridePhone),
+            Groom = new PersonInfo(model.GroomName, model.GroomEmail, model.GroomPhone),
+            Celebrated = new PersonInfo(model.CelebratedName, model.CelebratedEmail, model.CelebratedPhone),
             Street = model.Street,
             City = model.City,
             State = model.State,
@@ -105,8 +107,19 @@ public sealed class WeddingsController(
 
         wedding.Title = model.Title;
         wedding.WeddingDate = model.WeddingDate;
-        wedding.BrideName = model.BrideName;
-        wedding.GroomName = model.GroomName;
+        wedding.IsWedding = model.IsWedding;
+        if (model.IsWedding)
+        {
+            wedding.Bride = new Person { Name = model.BrideName, Email = model.BrideEmail, Phone = model.BridePhone };
+            wedding.Groom = new Person { Name = model.GroomName, Email = model.GroomEmail, Phone = model.GroomPhone };
+            wedding.Celebrated = null;
+        }
+        else
+        {
+            wedding.Celebrated = new Person { Name = model.CelebratedName, Email = model.CelebratedEmail, Phone = model.CelebratedPhone };
+            wedding.Bride = null;
+            wedding.Groom = null;
+        }
         if (wedding.Location is null)
         {
             wedding.Location = new Address
@@ -160,8 +173,16 @@ public sealed class WeddingsController(
     {
         Title = wedding.Title ?? string.Empty,
         WeddingDate = wedding.WeddingDate,
-        BrideName = wedding.BrideName ?? string.Empty,
-        GroomName = wedding.GroomName ?? string.Empty,
+        IsWedding = wedding.IsWedding,
+        BrideName = wedding.Bride?.Name ?? string.Empty,
+        BrideEmail = wedding.Bride?.Email,
+        BridePhone = wedding.Bride?.Phone,
+        GroomName = wedding.Groom?.Name ?? string.Empty,
+        GroomEmail = wedding.Groom?.Email,
+        GroomPhone = wedding.Groom?.Phone,
+        CelebratedName = wedding.Celebrated?.Name ?? string.Empty,
+        CelebratedEmail = wedding.Celebrated?.Email,
+        CelebratedPhone = wedding.Celebrated?.Phone,
         Street = wedding.Location?.Street ?? string.Empty,
         City = wedding.Location?.City ?? string.Empty,
         State = wedding.Location?.State ?? string.Empty,

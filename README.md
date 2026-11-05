@@ -1,6 +1,6 @@
 # Wedding Planner
 
-Plantilla monolítica para planificar bodas con .NET 10, ASP.NET Core MVC y vistas Razor. La aplicación web contiene la interfaz, autenticación y acceso a datos en el mismo proceso. No incluye Angular ni un proyecto de API.
+Plantilla monolítica para planificar eventos con .NET 10, ASP.NET Core MVC y vistas Razor. La aplicación web contiene la interfaz, autenticación y acceso a datos en el mismo proceso. No incluye Angular ni un proyecto de API.
 
 ## Estructura
 
@@ -64,8 +64,9 @@ Para crear migraciones manualmente:
 
 ```powershell
 dotnet tool install --global dotnet-ef
-dotnet ef migrations add InitialCreate --project src/Infrastructure --startup-project src/Web --output-dir Data/Migrations
-dotnet ef database update --project src/Infrastructure --startup-project src/Web
+cd src/Web
+dotnet ef migrations add InitialCreate
+dotnet ef database update
 ```
 
 Las cuentas locales actuales usan ASP.NET Core Identity con cookies.

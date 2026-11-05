@@ -46,6 +46,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(wedding => wedding.Title).HasMaxLength(150).IsRequired();
             entity.Property(wedding => wedding.Status).HasConversion<string>().HasMaxLength(30);
 
+            entity.OwnsOne(wedding => wedding.Bride);
+            entity.OwnsOne(wedding => wedding.Groom);
+            entity.OwnsOne(wedding => wedding.Celebrated);
+
             entity.HasOne(wedding => wedding.Coordinator)
                 .WithMany(user => user.Weddings)
                 .HasForeignKey(wedding => wedding.CoordinatorId)
