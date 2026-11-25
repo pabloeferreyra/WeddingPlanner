@@ -1,0 +1,307 @@
+@model WeddingPlanner.Web.Models.WeddingPlanningViewModel
+
+@{
+    ViewData["Title"] = $"Organización - {Model.Wedding.Title}";
+    var weddingId = Model.Wedding.Id;
+}
+
+<section class="section-heading">
+    <div>
+        <p class="eyebrow">Planificación</p>
+        <h1>@Model.Wedding.Title</h1>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Weddings" asp-action="Details" asp-route-id="@weddingId" class="btn btn-outline-secondary">
+            Volver a la celebración
+        </a>
+    </div>
+</section>
+
+@if (TempData["ModuleMessage"] is string message)
+{
+    <div class="alert alert-warning" role="alert">@message</div>
+}
+
+<section class="card border-0 shadow-sm p-4 mb-4" aria-labelledby="budget-heading">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <p class="eyebrow mb-1">Finanzas</p>
+            <h2 id="budget-heading" class="h4">Presupuesto</h2>
+        </div>
+        @if (Model.Budget is null)
+        {
+            <button type="button" class="btn btn-primary"
+                    data-open-modal data-modal-id="GlobalModal"
+                    data-url="@Url.Action("CreateBudget", "WeddingPlanning", new { weddingId })"
+                    data-title="Crear presupuesto">Crear presupuesto</button>
+        }
+        else
+        {
+            <button type="button" class="btn btn-outline-primary"
+                    data-open-modal data-modal-id="GlobalModal"
+                    data-url="@Url.Action("EditBudget", "WeddingPlanning", new { weddingId, id = Model.Budget.Id })"
+                    data-title="Editar presupuesto">Editar presupuesto</button>
+        }
+    </div>
+    @if (Model.Budget is null)
+    {
+        <p class="text-muted mb-0">Todavía no se definió un presupuesto para esta celebración.</p>
+    }
+    else
+    {
+        <div class="row mt-2">
+            <div class="col-md-4"><strong>Total:</strong> @Model.Budget.TotalAmount.ToString("C")</div>
+            <div class="col-md-4"><strong>Gastado:</strong> @Model.Budget.CurrentSpent.ToString("C")</div>
+            <div class="col-md-4"><strong>Disponible:</strong> @Model.Budget.GetRemainingBudget().ToString("C")</div>
+        </div>
+    }
+</section>
+
+<section class="card border-0 shadow-sm p-4 mb-4" aria-labelledby="guests-heading">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+        <h2 id="guests-heading" class="h4 mb-0">Invitados <span class="text-muted">(@Model.Guests.Count)</span></h2>
+        <button type="button" class="btn btn-primary btn-sm"
+                data-open-modal data-modal-id="GlobalModal"
+                data-url="@Url.Action("CreateGuest", "WeddingPlanning", new { weddingId })"
+                data-title="Agregar invitado">Agregar invitado</button>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Nombre</th><th>Correo</th><th>Confirmación</th><th>Comida</th><th>Mesa</th><th>Etiquetas</th><th>Acciones</th></tr></thead>
+            <tbody>
+            @if (Model.Guests.Count == 0)
+            {
+                <tr><td colspan="7" class="text-center text-muted">Todavía no hay invitados.</td></tr>
+            }
+            @foreach (var guest in Model.Guests)
+            {
+                <tr>
+                    <td>@guest.FirstName @guest.LastName</td>
+                    <td>@guest.Email</td>
+                    <td>@guest.RSVPStatus</td>
+                    <td>@guest.MealPreference</td>
+                    <td>@(guest.TableNumber?.ToString() ?? "—")</td>
+                    <td>@(guest.IsFamily ? "Familia " : "")@(guest.IsVIP ? "VIP" : "")</td>
+                    <td class="text-nowrap">
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                data-open-modal data-modal-id="GlobalModal"
+                                data-url="@Url.Action("EditGuest", "WeddingPlanning", new { weddingId, id = guest.Id })"
+                                data-title="Editar invitado">Editar</button>
+                        <form asp-controller="WeddingPlanning" asp-action="DeleteGuest"
+                              asp-route-weddingId="@weddingId" asp-route-id="@guest.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card border-0 shadow-sm p-4 mb-4" aria-labelledby="expenses-heading">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+        <h2 id="expenses-heading" class="h4 mb-0">Gastos <span class="text-muted">(@Model.Expenses.Count)</span></h2>
+        @if (Model.Budget is not null)
+        {
+            <button type="button" class="btn btn-primary btn-sm"
+                    data-open-modal data-modal-id="GlobalModal"
+                    data-url="@Url.Action("CreateExpense", "WeddingPlanning", new { weddingId })"
+                    data-title="Agregar gasto">Agregar gasto</button>
+        }
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Descripción</th><th>Categoría</th><th>Fecha</th><th>Proveedor</th><th>Importe</th><th>Acciones</th></tr></thead>
+            <tbody>
+            @if (Model.Expenses.Count == 0)
+            {
+                <tr><td colspan="6" class="text-center text-muted">@(Model.Budget is null ? "Crea un presupuesto para registrar gastos." : "Todavía no hay gastos.")</td></tr>
+            }
+            @foreach (var expense in Model.Expenses)
+            {
+                <tr>
+                    <td>@expense.Description</td>
+                    <td>@expense.Category</td>
+                    <td>@expense.ExpenseDate.ToString("d")</td>
+                    <td>@(expense.VendorName ?? "—")</td>
+                    <td>@expense.Amount.ToString("C")</td>
+                    <td class="text-nowrap">
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                data-open-modal data-modal-id="GlobalModal"
+                                data-url="@Url.Action("EditExpense", "WeddingPlanning", new { weddingId, id = expense.Id })"
+                                data-title="Editar gasto">Editar</button>
+                        <form asp-controller="WeddingPlanning" asp-action="DeleteExpense"
+                              asp-route-weddingId="@weddingId" asp-route-id="@expense.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card border-0 shadow-sm p-4 mb-4" aria-labelledby="tasks-heading">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+        <h2 id="tasks-heading" class="h4 mb-0">Tareas y checklist <span class="text-muted">(@Model.Tasks.Count)</span></h2>
+        <button type="button" class="btn btn-primary btn-sm"
+                data-open-modal data-modal-id="GlobalModal"
+                data-url="@Url.Action("CreateTask", "WeddingPlanning", new { weddingId })"
+                data-title="Agregar tarea">Agregar tarea</button>
+    </div>
+    @if (Model.Tasks.Count == 0)
+    {
+        <p class="text-center text-muted">Todavía no hay tareas.</p>
+    }
+    @foreach (var task in Model.Tasks)
+    {
+        <article class="border rounded p-3 mb-3">
+            <div class="d-flex flex-wrap justify-content-between gap-2">
+                <div>
+                    <h3 class="h5 mb-1">@task.Title</h3>
+                    <p class="text-muted mb-1">Vence @task.DueDate.ToString("d") · @task.Category · @task.Priority · @task.Status</p>
+                    @if (!string.IsNullOrWhiteSpace(task.Description))
+                    {
+                        <p class="mb-2">@task.Description</p>
+                    }
+                </div>
+                <div class="d-flex gap-1 align-items-start">
+                    <button type="button" class="btn btn-sm btn-outline-primary"
+                            data-open-modal data-modal-id="GlobalModal"
+                            data-url="@Url.Action("EditTask", "WeddingPlanning", new { weddingId, id = task.Id })"
+                            data-title="Editar tarea">Editar</button>
+                    <form asp-controller="WeddingPlanning" asp-action="DeleteTask"
+                          asp-route-weddingId="@weddingId" asp-route-id="@task.Id" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                    </form>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <h4 class="h6 mb-0">Checklist</h4>
+                <button type="button" class="btn btn-sm btn-outline-primary"
+                        data-open-modal data-modal-id="GlobalModal"
+                        data-url="@Url.Action("CreateChecklistItem", "WeddingPlanning", new { weddingId, taskId = task.Id })"
+                        data-title="Agregar al checklist">Agregar elemento</button>
+            </div>
+            <ul class="list-group list-group-flush mt-2">
+                @foreach (var item in Model.ChecklistItems.Where(item => item.TaskId == task.Id))
+                {
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center gap-2">
+                        <span>@(item.IsCompleted ? "✓ " : "")@item.Description</span>
+                        <div class="d-flex gap-1">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    data-open-modal data-modal-id="GlobalModal"
+                                    data-url="@Url.Action("EditChecklistItem", "WeddingPlanning", new { weddingId, taskId = task.Id, id = item.Id })"
+                                    data-title="Editar elemento">Editar</button>
+                            <form asp-controller="WeddingPlanning" asp-action="DeleteChecklistItem"
+                                  asp-route-weddingId="@weddingId" asp-route-taskId="@task.Id" asp-route-id="@item.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ul>
+        </article>
+    }
+</section>
+
+<section class="card border-0 shadow-sm p-4 mb-4" aria-labelledby="timeline-heading">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+        <h2 id="timeline-heading" class="h4 mb-0">Cronograma <span class="text-muted">(@Model.Timelines.Count)</span></h2>
+        <button type="button" class="btn btn-primary btn-sm"
+                data-open-modal data-modal-id="GlobalModal"
+                data-url="@Url.Action("CreateTimeline", "WeddingPlanning", new { weddingId })"
+                data-title="Agregar actividad">Agregar actividad</button>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Actividad</th><th>Fecha</th><th>Etapa</th><th>Lugar</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+            @if (Model.Timelines.Count == 0)
+            {
+                <tr><td colspan="6" class="text-center text-muted">Todavía no hay actividades programadas.</td></tr>
+            }
+            @foreach (var item in Model.Timelines)
+            {
+                <tr>
+                    <td>@item.EventName</td>
+                    <td>@item.ScheduledDate.ToString("g")</td>
+                    <td>@item.Category</td>
+                    <td>@(item.Location ?? "—")</td>
+                    <td>@(item.IsCompleted ? "Completado" : "Pendiente")</td>
+                    <td class="text-nowrap">
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                data-open-modal data-modal-id="GlobalModal"
+                                data-url="@Url.Action("EditTimeline", "WeddingPlanning", new { weddingId, id = item.Id })"
+                                data-title="Editar actividad">Editar</button>
+                        <form asp-controller="WeddingPlanning" asp-action="DeleteTimeline"
+                              asp-route-weddingId="@weddingId" asp-route-id="@item.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card border-0 shadow-sm p-4 mb-4" aria-labelledby="vendors-heading">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+        <h2 id="vendors-heading" class="h4 mb-0">Proveedores contratados <span class="text-muted">(@Model.VendorAssignments.Count)</span></h2>
+        <button type="button" class="btn btn-primary btn-sm"
+                data-open-modal data-modal-id="GlobalModal"
+                data-url="@Url.Action("CreateVendorAssignment", "WeddingPlanning", new { weddingId })"
+                data-title="Asignar proveedor">Asignar proveedor</button>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Proveedor</th><th>Contrato</th><th>Importe</th><th>Pagado</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+            @if (Model.VendorAssignments.Count == 0)
+            {
+                <tr><td colspan="6" class="text-center text-muted">Todavía no hay proveedores asignados.</td></tr>
+            }
+            @foreach (var assignment in Model.VendorAssignments)
+            {
+                var vendor = Model.Vendors.FirstOrDefault(candidate => candidate.Id == assignment.VendorId);
+                <tr>
+                    <td>
+                        @(vendor?.BusinessName ?? "Proveedor no disponible")
+                        @if (vendor is not null)
+                        {
+                            <div><a asp-controller="VendorDocuments" asp-action="Index" asp-route-vendorId="@vendor.Id">Documentos</a></div>
+                        }
+                    </td>
+                    <td>@assignment.ContractDate.ToString("d")</td>
+                    <td>@assignment.PaymentAmount.ToString("C")</td>
+                    <td>@assignment.TotalPaid.ToString("C")</td>
+                    <td>@assignment.PaymentStatus</td>
+                    <td class="text-nowrap">
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                data-open-modal data-modal-id="GlobalModal"
+                                data-url="@Url.Action("EditVendorAssignment", "WeddingPlanning", new { weddingId, id = assignment.Id })"
+                                data-title="Editar asignación">Editar</button>
+                        <form asp-controller="WeddingPlanning" asp-action="DeleteVendorAssignment"
+                              asp-route-weddingId="@weddingId" asp-route-id="@assignment.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/relatedModules.js" asp-append-version="true"></script>
+}

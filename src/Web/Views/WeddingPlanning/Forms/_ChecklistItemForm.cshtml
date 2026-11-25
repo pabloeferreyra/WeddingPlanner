@@ -1,0 +1,31 @@
+@model WeddingPlanner.Web.Models.ChecklistItemFormViewModel
+
+@{
+    var isEdit = Model.Id != Guid.Empty;
+}
+
+<form asp-controller="WeddingPlanning"
+      asp-action="@(isEdit ? "EditChecklistItem" : "CreateChecklistItem")"
+      asp-route-weddingId="@Model.WeddingId"
+      asp-route-taskId="@Model.TaskId"
+      asp-route-id="@Model.Id"
+      method="post">
+    @Html.AntiForgeryToken()
+    <input asp-for="Id" type="hidden" />
+    <input asp-for="WeddingId" type="hidden" />
+    <input asp-for="TaskId" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label">Elemento</label>
+        <input asp-for="Description" class="form-control" />
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    <div class="form-check mb-3">
+        <input asp-for="IsCompleted" class="form-check-input" />
+        <label asp-for="IsCompleted" class="form-check-label">Completado</label>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Guardar elemento</button>
+        <button type="button" class="btn btn-outline-secondary" data-close-modal>Cancelar</button>
+    </div>
+</form>

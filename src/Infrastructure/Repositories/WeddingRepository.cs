@@ -37,6 +37,7 @@ ILogger<WeddingRepository> logger) : IWeddingRepository
         var today = DateOnly.FromDateTime(DateTime.Today);
 
         var weddings = await dbContext.Weddings
+            .Include(wedding => wedding.Location)
             .AsNoTracking()
             .Where(wedding => wedding.WeddingDate >= today)
             .OrderBy(wedding => wedding.WeddingDate)
@@ -55,6 +56,7 @@ ILogger<WeddingRepository> logger) : IWeddingRepository
         logger.LogDebug("Getting weddings by date {Date}", date);
 
         var weddings = await dbContext.Weddings
+            .Include(wedding => wedding.Location)
             .AsNoTracking()
             .Where(wedding => wedding.WeddingDate == date)
             .ToListAsync(cancellationToken);
@@ -69,6 +71,7 @@ ILogger<WeddingRepository> logger) : IWeddingRepository
         logger.LogDebug("Getting weddings containing title {Title}", title);
 
         var weddings = await dbContext.Weddings
+            .Include(wedding => wedding.Location)
             .AsNoTracking()
             .Where(wedding => wedding.Title.Contains(title))
             .ToListAsync(cancellationToken);

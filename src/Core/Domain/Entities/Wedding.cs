@@ -26,12 +26,8 @@ public class Wedding
     public decimal InitialBudget { get; set; }
 
     public WeddingStatus Status { get; set; } = WeddingStatus.Planning;
-
-    // Used when IsWedding is true
     public Person? Bride { get; set; }
     public Person? Groom { get; set; }
-
-    // Used when IsWedding is false
     public Person? Celebrated { get; set; }
 
     // Coordinator (Foreign Key)

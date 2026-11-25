@@ -1,0 +1,51 @@
+@model WeddingPlanner.Web.Models.NotificationListViewModel
+
+@{
+    ViewData["Title"] = "Notificaciones";
+}
+
+<section class="section-heading">
+    <div>
+        <p class="eyebrow">Tu cuenta</p>
+        <h1>Notificaciones</h1>
+    </div>
+</section>
+
+<div class="card border-0 shadow-sm p-3">
+    @if (Model.Notifications.Count == 0)
+    {
+        <p class="text-center text-muted my-4">No tienes notificaciones.</p>
+    }
+    else
+    {
+        <div class="list-group list-group-flush">
+            @foreach (var notification in Model.Notifications)
+            {
+                <article class="list-group-item d-flex flex-wrap justify-content-between align-items-start gap-3 @(notification.IsRead ? "" : "bg-light")">
+                    <div>
+                        <p class="mb-1">@notification.Message</p>
+                        <small class="text-muted">@notification.CreatedAt.ToString("g") · @notification.Type</small>
+                        @if (!string.IsNullOrWhiteSpace(notification.ActionUrl)
+                             && Url.IsLocalUrl(notification.ActionUrl))
+                        {
+                            <div><a href="@notification.ActionUrl">Ver detalle</a></div>
+                        }
+                    </div>
+                    <div class="d-flex gap-2">
+                        @if (!notification.IsRead)
+                        {
+                            <form asp-controller="Notifications" asp-action="MarkRead" asp-route-id="@notification.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Marcar leída</button>
+                            </form>
+                        }
+                        <form asp-controller="Notifications" asp-action="Delete" asp-route-id="@notification.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                        </form>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</div>

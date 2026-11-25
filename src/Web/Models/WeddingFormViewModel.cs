@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using WeddingPlanner.Core.Domain.Enums;
 
 namespace WeddingPlanner.Web.Models;
 
@@ -31,6 +32,10 @@ public sealed class WeddingFormViewModel : IValidatableObject
 
     [Display(Name = "Es una boda")]
     public bool IsWedding { get; set; } = true;
+
+    [EnumDataType(typeof(WeddingStatus), ErrorMessage = "El estado seleccionado no es válido.")]
+    [Display(Name = "Estado")]
+    public WeddingStatus Status { get; set; } = WeddingStatus.Planning;
 
     [StringLength(100)]
     [Display(Name = "Nombre de la novia")]

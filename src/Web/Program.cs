@@ -6,6 +6,12 @@ using WeddingPlanner.Infrastructure;
 using WeddingPlanner.Web.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
+var envPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", ".env"));
+if (File.Exists(envPath))
+{
+    DotNetEnv.Env.Load(envPath);
+    builder.Configuration.AddEnvironmentVariables();
+}
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)

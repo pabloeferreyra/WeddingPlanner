@@ -1,0 +1,72 @@
+@model WeddingPlanner.Web.Models.VendorDocumentListViewModel
+
+@{
+    ViewData["Title"] = $"Documentos - {Model.Vendor.BusinessName}";
+}
+
+<section class="section-heading">
+    <div>
+        <p class="eyebrow">Proveedor</p>
+        <h1>Documentos de @Model.Vendor.BusinessName</h1>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary"
+                data-open-modal data-modal-id="GlobalModal"
+                data-url="@Url.Action("Create", "VendorDocuments", new { vendorId = Model.Vendor.Id })"
+                data-title="Agregar documento">Agregar documento</button>
+        <a asp-controller="Vendors" asp-action="Index" class="btn btn-outline-secondary">Volver a proveedores</a>
+    </div>
+</section>
+
+<div class="table-responsive card border-0 shadow-sm p-3">
+    <table class="table align-middle mb-0">
+        <thead>
+            <tr><th>Documento</th><th>Tipo</th><th>Vencimiento</th><th>Asignación</th><th>Archivo</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+        @if (Model.Documents.Count == 0)
+        {
+            <tr><td colspan="6" class="text-center text-muted">Todavía no hay documentos registrados.</td></tr>
+        }
+        @foreach (var document in Model.Documents)
+        {
+            <tr>
+                <td>@document.DocumentName</td>
+                <td>@document.DocumentType</td>
+                <td>@(document.ExpiryDate?.ToString("d") ?? "—")</td>
+                <td>
+                    @(document.VendorAssignmentId is Guid assignmentId
+                        ? Model.Assignments.FirstOrDefault(assignment => assignment.Id == assignmentId)?.ContractDate.ToString("d") ?? "Asignación no disponible"
+                        : "—")
+                </td>
+                <td>
+                    @if (Uri.TryCreate(document.FileUrl, UriKind.Absolute, out var fileUri)
+                         && (fileUri.Scheme == Uri.UriSchemeHttps || fileUri.Scheme == Uri.UriSchemeHttp))
+                    {
+                        <a href="@fileUri.AbsoluteUri" target="_blank" rel="noopener noreferrer">Abrir</a>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Enlace no válido</span>
+                    }
+                </td>
+                <td class="text-nowrap">
+                    <button type="button" class="btn btn-sm btn-outline-primary"
+                            data-open-modal data-modal-id="GlobalModal"
+                            data-url="@Url.Action("Edit", "VendorDocuments", new { vendorId = Model.Vendor.Id, id = document.Id })"
+                            data-title="Editar documento">Editar</button>
+                    <form asp-controller="VendorDocuments" asp-action="Delete"
+                          asp-route-vendorId="@Model.Vendor.Id" asp-route-id="@document.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script src="~/js/relatedModules.js" asp-append-version="true"></script>
+}

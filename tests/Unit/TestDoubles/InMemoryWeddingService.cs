@@ -72,7 +72,10 @@ public sealed class InMemoryWeddingService : IWeddingService
                 wedding.Id,
                 wedding.Title!,
                 wedding.WeddingDate,
-                wedding.Location!.ToString()))
+                wedding.Location!.ToString(),
+                wedding.ExpectedGuestCount,
+                wedding.Status,
+                wedding.IsWedding))
             .ToList();
 
         return Task.FromResult(result);

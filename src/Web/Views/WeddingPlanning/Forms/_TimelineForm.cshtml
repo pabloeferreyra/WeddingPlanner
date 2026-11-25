@@ -1,0 +1,58 @@
+@model WeddingPlanner.Web.Models.TimelineFormViewModel
+@using WeddingPlanner.Core.Domain.Enums
+
+@{
+    var isEdit = Model.Id != Guid.Empty;
+}
+
+<form asp-controller="WeddingPlanning"
+      asp-action="@(isEdit ? "EditTimeline" : "CreateTimeline")"
+      asp-route-weddingId="@Model.WeddingId"
+      asp-route-id="@Model.Id"
+      method="post">
+    @Html.AntiForgeryToken()
+    <input asp-for="Id" type="hidden" />
+    <input asp-for="WeddingId" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+    <div class="row g-3">
+        <div class="col-md-8">
+            <label asp-for="EventName" class="form-label">Actividad</label>
+            <input asp-for="EventName" class="form-control" />
+            <span asp-validation-for="EventName" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Category" class="form-label">Etapa</label>
+            <select asp-for="Category" asp-items="Html.GetEnumSelectList<TimelineCategory>()" class="form-select"></select>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="ScheduledDate" class="form-label">Fecha y hora</label>
+            <input asp-for="ScheduledDate" type="datetime-local" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label asp-for="DurationMinutes" class="form-label">Duración (minutos)</label>
+            <input asp-for="DurationMinutes" type="number" min="1" class="form-control" />
+            <span asp-validation-for="DurationMinutes" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Location" class="form-label">Lugar</label>
+            <input asp-for="Location" class="form-control" />
+        </div>
+        <div class="col-md-6 form-check align-self-end ms-2">
+            <input asp-for="IsCompleted" class="form-check-input" />
+            <label asp-for="IsCompleted" class="form-check-label">Completado</label>
+        </div>
+        <div class="col-12">
+            <label asp-for="Description" class="form-label">Descripción</label>
+            <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+        <div class="col-12">
+            <label asp-for="Notes" class="form-label">Notas</label>
+            <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
+        </div>
+    </div>
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">Guardar actividad</button>
+        <button type="button" class="btn btn-outline-secondary" data-close-modal>Cancelar</button>
+    </div>
+</form>

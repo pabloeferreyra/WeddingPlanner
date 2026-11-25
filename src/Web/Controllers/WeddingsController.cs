@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using WeddingPlanner.Application.UseCases.Weddings;
 using WeddingPlanner.Core.Domain.Entities;
+using WeddingPlanner.Core.Domain.Enums;
 using WeddingPlanner.Web.Helpers;
 using WeddingPlanner.Web.Models;
 
@@ -25,14 +26,48 @@ public sealed class WeddingsController(
     {
         var (draw, pageSize, skip) = DataTablesHelper.GetDataTableParams(Request);
         var weddings = await getAllWeddingsHandler.HandleAsync(cancellationToken);
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var search = Request.Form["search"].FirstOrDefault()?.Trim();
+        var status = Request.Form["status"].FirstOrDefault()?.Trim();
+        var dateFilter = Request.Form["date"].FirstOrDefault()?.Trim();
+
+        var filtered = weddings.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            filtered = filtered.Where(wedding =>
+                (wedding.Title?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+        if (!string.IsNullOrWhiteSpace(status) &&
+            Enum.TryParse<WeddingStatus>(status, true, out var weddingStatus))
+        {
+            filtered = filtered.Where(wedding => wedding.Status == weddingStatus);
+        }
+        if (dateFilter == "upcoming")
+        {
+            filtered = filtered.Where(wedding => wedding.WeddingDate >= today);
+        }
+        else if (dateFilter == "past")
+        {
+            filtered = filtered.Where(wedding => wedding.WeddingDate < today);
+        }
+
+        var filteredList = filtered.ToList();
         return Json(new
         {
             data = DataTablesHelper.ApplyPaging(
                 DataTablesHelper.ApplySorting(
-                    weddings.OrderBy(wedding => wedding.WeddingDate).ToList(),
+                    filteredList.OrderBy(wedding => wedding.WeddingDate).ToList(),
                     Request),
                 pageSize,
-                skip)
+                skip),
+            recordsTotal = weddings.Count(),
+            recordsFiltered = filteredList.Count,
+            summary = new
+            {
+                total = weddings.Count(),
+                upcoming = weddings.Count(wedding => wedding.WeddingDate >= today),
+                completed = weddings.Count(wedding => wedding.Status == WeddingStatus.Completed)
+            }
         });
     }
 
@@ -94,7 +129,7 @@ public sealed class WeddingsController(
     {
         if (!ModelState.IsValid)
         {
-            return PartialView("_Create", model);
+            return PartialView("_Edit", model);
         }
 
         var wedding = await getWeddingByIdHandler.HandleAsync(
@@ -108,6 +143,7 @@ public sealed class WeddingsController(
         wedding.Title = model.Title;
         wedding.WeddingDate = model.WeddingDate;
         wedding.IsWedding = model.IsWedding;
+        wedding.Status = model.Status;
         if (model.IsWedding)
         {
             wedding.Bride = new Person { Name = model.BrideName, Email = model.BrideEmail, Phone = model.BridePhone };
@@ -173,6 +209,7 @@ public sealed class WeddingsController(
     {
         Title = wedding.Title ?? string.Empty,
         WeddingDate = wedding.WeddingDate,
+        Status = wedding.Status,
         IsWedding = wedding.IsWedding,
         BrideName = wedding.Bride?.Name ?? string.Empty,
         BrideEmail = wedding.Bride?.Email,

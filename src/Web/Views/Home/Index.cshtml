@@ -23,14 +23,71 @@
     @foreach (var wedding in Model)
     {
         <article class="wedding-card">
-            <div class="date-badge">
-                <strong>@wedding.Date.ToString("dd")</strong>
-                <span>@wedding.Date.ToString("MMM").ToUpperInvariant()</span>
-            </div>
-            <div>
+            <div class="wedding-card-main">
                 <h3>@wedding.Name</h3>
-                <p>@(string.IsNullOrWhiteSpace(wedding.Venue) ? "Lugar por confirmar" : wedding.Venue)</p>
+                <div class="wedding-card-meta">
+                    <span>
+                        <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16">
+                            <rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"></rect>
+                            <path d="M7 3v4M17 3v4M3 10h18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+                        </svg>
+                        @wedding.Date.ToString("dd/MM/yyyy")
+                    </span>
+                    <span>
+                        <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16">
+                            <circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.7"></circle>
+                            <path d="M3.5 19v-1.5a5.5 5.5 0 0 1 11 0V19M16 5.5a3 3 0 0 1 0 5.8M18 14a4.5 4.5 0 0 1 2.5 4v1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+                        </svg>
+                        @wedding.ExpectedGuestCount invitados
+                    </span>
+                </div>
             </div>
+            <span class="wedding-status-badge wedding-status-@wedding.Status.ToString().ToLowerInvariant()">
+                @(wedding.Status switch
+                {
+                    WeddingPlanner.Core.Domain.Enums.WeddingStatus.Planning => "En planificación",
+                    WeddingPlanner.Core.Domain.Enums.WeddingStatus.Confirmed => "Confirmada",
+                    WeddingPlanner.Core.Domain.Enums.WeddingStatus.Completed => "Finalizada",
+                    WeddingPlanner.Core.Domain.Enums.WeddingStatus.Cancelled => "Cancelada",
+                    _ => wedding.Status.ToString()
+                })
+            </span>
+            <footer class="wedding-card-actions">
+                <a class="btn btn-primary wedding-card-view" asp-controller="Weddings" asp-action="Details" asp-route-id="@wedding.Id">Ver evento</a>
+                <button class="wedding-icon-button"
+                        type="button"
+                        data-open-modal
+                        data-modal-id="GlobalModal"
+                        data-url="/Weddings/@wedding.Id/Edit"
+                        data-title="Editar celebración"
+                        aria-label="Editar @wedding.Name"
+                        title="Editar celebración">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17">
+                        <path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </button>
+                <div class="dropdown">
+                    <button class="wedding-icon-button"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                            aria-label="Más opciones para @wedding.Name"
+                            title="Más opciones">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17">
+                            <circle cx="5" cy="12" r="1.2" fill="currentColor"></circle>
+                            <circle cx="12" cy="12" r="1.2" fill="currentColor"></circle>
+                            <circle cx="19" cy="12" r="1.2" fill="currentColor"></circle>
+                        </svg>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" asp-controller="WeddingPlanning" asp-action="Index" asp-route-weddingId="@wedding.Id">
+                                Administrar planificación
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </footer>
         </article>
     }
 </div>

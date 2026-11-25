@@ -19,7 +19,10 @@ public sealed class WeddingService(IWeddingRepository weddingRepository,
             wedding.Id,
             wedding.Title!,
             wedding.WeddingDate,
-            wedding.Location?.ToString() ?? "Location unavailable"))];
+            wedding.Location?.ToString() ?? "Location unavailable",
+            wedding.ExpectedGuestCount,
+            wedding.Status,
+            wedding.IsWedding))];
     }
 
     public async Task<IReadOnlyList<Wedding>?> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default)

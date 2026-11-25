@@ -6,5 +6,5 @@ public class PhoneNumber
     public string? AreaCode { get; set; }
     public string? Number { get; set; }
 
-    public override string ToString() => $"+({AreaCode}) {Number}";
+    public override string ToString() => $"+54 ({AreaCode}) {Number}";
 }

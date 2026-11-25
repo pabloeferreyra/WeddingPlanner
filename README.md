@@ -54,9 +54,10 @@ docker compose --profile tools up --build
 
 ## Ejecutar sin Docker
 
-Requiere PostgreSQL local y una cadena compatible en `src/Web/appsettings.Development.json`:
+Requiere PostgreSQL accesible desde la máquina y un `.env` en la raíz del repositorio. La aplicación carga sus valores `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` al iniciar:
 
 ```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 dotnet run --project src/Web
 ```
 

@@ -61,14 +61,20 @@
                 ? serviceTypes[serviceType] || 'Otro'
                 : AppUtils.escapeHtml(vendor.serviceType);
             const city = vendor.address?.city || 'Sin ciudad';
-            const rating = Number(vendor.averageRating || 0).toFixed(1);
+            const ratingValue = Math.min(5, Math.max(0, Number(vendor.averageRating || 0)));
+            const rating = ratingValue.toFixed(1);
+            const ratingPercent = (ratingValue / 5 * 100).toFixed(2);
 
             return `<tr>
                 <td>${AppUtils.escapeHtml(vendor.businessName)}${vendor.isFavorite ? ' <span aria-label="Favorito" title="Favorito">★</span>' : ''}</td>
                 <td>${service}</td>
                 <td>${AppUtils.escapeHtml(city)}</td>
                 <td>${AppUtils.escapeHtml(vendor.email || vendor.contactPerson || 'Sin contacto')}</td>
-                <td>${AppUtils.escapeHtml(rating)} / 5</td>
+                <td>
+                    <span class="d-inline-flex align-items-center gap-2">
+                        <span class="rating-display" style="--rating-percent: ${ratingPercent}%" role="img" aria-label="${AppUtils.escapeHtml(rating)} de 5 estrellas" title="${AppUtils.escapeHtml(rating)} de 5"></span>
+                    </span>
+                </td>
                 <td>${vendor.isActive ? 'Activo' : 'Inactivo'}</td>
                 <td class="text-nowrap">
                     <button class="btn btn-sm btn-outline-secondary me-1" data-open-modal data-modal-id="GlobalModal"

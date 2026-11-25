@@ -105,37 +105,36 @@ public class VendorsController(
             return NotFound();
         }
 
-        var updatedVendor = new Vendor
+        selectedVendor.BusinessName = model.BusinessName;
+        selectedVendor.ContactPerson = model.ContactPerson;
+        selectedVendor.Email = model.Email;
+        if (model.Phone is null || (model.Phone.AreaCode is null && model.Phone.Number is null))
         {
-            Id = id,
-            BusinessName = model.BusinessName,
-            ContactPerson = model.ContactPerson,
-            Email = model.Email,
-            Phone = model.Phone is null || (model.Phone.AreaCode is null && model.Phone.Number is null)
-                ? null
-                : new PhoneNumber
-                {
-                    AreaCode = model.Phone.AreaCode,
-                    Number = model.Phone.Number
-                },
-            Website = model.Website,
-            ServiceType = model.ServiceType,
-            Address = new Address
-            {
-                Street = model.Address.Street,
-                City = model.Address.City,
-                State = model.Address.State,
-                ZipCode = model.Address.ZipCode
-            },
-            Description = model.Description,
-            AverageRating = model.AverageRating,
-            IsActive = model.IsActive,
-            IsFavorite = model.IsFavorite,
-            FacebookUrl = model.FacebookUrl,
-            InstagramUrl = model.InstagramUrl
-        };
+            selectedVendor.Phone = null;
+        }
+        else if (selectedVendor.Phone is null)
+        {
+            selectedVendor.Phone = new PhoneNumber { AreaCode = model.Phone.AreaCode, Number = model.Phone.Number };
+        }
+        else
+        {
+            selectedVendor.Phone.AreaCode = model.Phone.AreaCode;
+            selectedVendor.Phone.Number = model.Phone.Number;
+        }
+        selectedVendor.Website = model.Website;
+        selectedVendor.ServiceType = model.ServiceType;
+        selectedVendor.Address.Street = model.Address.Street;
+        selectedVendor.Address.City = model.Address.City;
+        selectedVendor.Address.State = model.Address.State;
+        selectedVendor.Address.ZipCode = model.Address.ZipCode;
+        selectedVendor.Description = model.Description;
+        selectedVendor.AverageRating = model.AverageRating;
+        selectedVendor.IsActive = model.IsActive;
+        selectedVendor.IsFavorite = model.IsFavorite;
+        selectedVendor.FacebookUrl = model.FacebookUrl;
+        selectedVendor.InstagramUrl = model.InstagramUrl;
 
-        await updateVendorHandler.HandleAsync(new UpdateVendorCommand(updatedVendor));
+        await updateVendorHandler.HandleAsync(new UpdateVendorCommand(selectedVendor));
         return RedirectToAction("Index");
     }
 

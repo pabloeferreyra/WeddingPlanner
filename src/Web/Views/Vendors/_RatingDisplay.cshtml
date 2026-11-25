@@ -1,0 +1,13 @@
+@model decimal
+@using System.Globalization
+@{
+    var rating = Math.Clamp(Model, 0m, 5m);
+    var percentage = rating / 5m * 100m;
+    var percentageText = percentage.ToString("0.##", CultureInfo.InvariantCulture);
+    var ratingText = rating.ToString("0.0", CultureInfo.InvariantCulture);
+}
+<span class="rating-display"
+      style="--rating-percent: @percentageText%"
+      role="img"
+      aria-label="@ratingText de 5 estrellas"
+      title="@ratingText de 5"></span>
