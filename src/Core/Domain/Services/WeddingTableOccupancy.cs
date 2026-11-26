@@ -1,7 +1,8 @@
 namespace WeddingPlanner.Core.Domain.Services;
 
-public readonly record struct WeddingTableOccupancy(int Capacity, int Occupied)
+public readonly record struct WeddingTableOccupancy(int Capacity, GuestAttendanceSummary Attendance)
 {
+    public int Occupied => Attendance.ConfirmedAttendeeCount;
     public int Available => Capacity - Occupied;
     public decimal Percentage => Capacity > 0 ? Occupied * 100m / Capacity : 0;
 
@@ -10,6 +11,6 @@ public readonly record struct WeddingTableOccupancy(int Capacity, int Occupied)
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
         return new WeddingTableOccupancy(
             capacity,
-            GuestAttendanceCalculator.Calculate(guests).ConfirmedAttendeeCount);
+            GuestAttendanceCalculator.Calculate(guests));
     }
 }

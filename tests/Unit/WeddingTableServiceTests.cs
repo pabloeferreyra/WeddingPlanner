@@ -90,12 +90,54 @@ public class WeddingTableServiceTests
         await guests.UpdateGuestAsync(guest);
         var summary = await new WeddingTableService(store).GetByWeddingAsync(weddingId);
         Assert.Equal(0, summary.Occupied);
+        Assert.Null(store.Guests.Single().WeddingTableId);
         guest.RSVPStatus = GuestStatus.Confirmed;
-        await Assert.ThrowsAsync<ValidationException>(() => guests.UpdateGuestAsync(guest));
-        guest.WeddingTableId = null;
         await guests.UpdateGuestAsync(guest);
         summary = await new WeddingTableService(store).GetByWeddingAsync(weddingId);
         Assert.Single(summary.UnassignedConfirmedGuests);
+        guest.WeddingTableId = table.Id;
+        await Assert.ThrowsAsync<ValidationException>(() => guests.UpdateGuestAsync(guest));
+        Assert.Null(store.Guests.Single().WeddingTableId);
+    }
+
+    [Theory]
+    [InlineData(GuestStatus.Pending)]
+    [InlineData(GuestStatus.Declined)]
+    public async Task Unconfirmed_guest_loses_table_and_does_not_recover_it_when_reconfirmed(GuestStatus status)
+    {
+        var store = new SeatingStore();
+        var table = new WeddingTable { WeddingId = Guid.NewGuid(), Name = "1", Capacity = 2 };
+        store.Tables.Add(table);
+        var service = new GuestService(store, store, NullLogger<GuestService>.Instance, store);
+        var guest = CreateGuest(table.WeddingId, table.Id, false);
+        await service.AddGuestAsync(guest);
+
+        guest.RSVPStatus = status;
+        await service.UpdateGuestAsync(guest);
+
+        Assert.Null(guest.WeddingTableId);
+        Assert.Null(store.Guests.Single().WeddingTableId);
+        Assert.Equal(status, store.Guests.Single().RSVPStatus);
+
+        guest.RSVPStatus = GuestStatus.Confirmed;
+        await service.UpdateGuestAsync(guest);
+
+        Assert.Null(store.Guests.Single().WeddingTableId);
+    }
+
+    [Fact]
+    public async Task Guest_remaining_confirmed_keeps_table()
+    {
+        var store = new SeatingStore();
+        var table = new WeddingTable { WeddingId = Guid.NewGuid(), Name = "1", Capacity = 1 };
+        store.Tables.Add(table);
+        var service = new GuestService(store, store, NullLogger<GuestService>.Instance, store);
+        var guest = CreateGuest(table.WeddingId, table.Id, false);
+        await service.AddGuestAsync(guest);
+
+        await service.UpdateGuestAsync(guest);
+
+        Assert.Equal(table.Id, store.Guests.Single().WeddingTableId);
     }
 
     [Theory]

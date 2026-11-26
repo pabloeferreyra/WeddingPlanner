@@ -309,6 +309,7 @@
                         <span class="planning-badge">@status</span>
                     </div>
                     <p>@occupancy.Occupied de @table.Capacity plazas ocupadas · @occupancy.Available disponibles</p>
+                    <p>Invitados principales: @occupancy.Attendance.ConfirmedMainGuestCount · Acompañantes: @occupancy.Attendance.ConfirmedCompanionCount</p>
                     <progress value="@occupancy.Occupied" max="@table.Capacity" aria-label="Ocupación de @table.Name">@occupancy.Percentage.ToString("0.#")%</progress>
                     <p>@occupancy.Percentage.ToString("0.#")% de ocupación</p>
                     @if (!string.IsNullOrWhiteSpace(table.Notes))

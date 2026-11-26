@@ -32,7 +32,9 @@ IWeddingTableRepository tableRepository) : IGuestService
         NormalizeCompanionAttendance(guest);
         return await tableRepository.WithWeddingLockAsync(guest.WeddingId, async () =>
         {
-            if (guest.WeddingTableId is not null)
+            if (guest.RSVPStatus != GuestStatus.Confirmed)
+                guest.WeddingTableId = null;
+            else if (guest.WeddingTableId is not null)
                 await ValidateTableAsync(guest, isNew: false);
             return await genericRepository.UpdateAsync(guest);
         });
