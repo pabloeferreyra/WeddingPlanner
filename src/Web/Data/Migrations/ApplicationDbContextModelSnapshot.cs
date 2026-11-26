@@ -372,10 +372,10 @@ namespace WeddingPlanner.Web.Data.Migrations
                     b.Property<int>("RSVPStatus")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("TableNumber")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("WeddingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("WeddingTableId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -383,6 +383,8 @@ namespace WeddingPlanner.Web.Data.Migrations
                     b.HasIndex("PhoneId");
 
                     b.HasIndex("WeddingId");
+
+                    b.HasIndex("WeddingTableId", "WeddingId");
 
                     b.ToTable("Guests");
                 });
@@ -885,6 +887,41 @@ namespace WeddingPlanner.Web.Data.Migrations
                     b.ToTable("Weddings");
                 });
 
+            modelBuilder.Entity("WeddingPlanner.Core.Domain.Entities.WeddingTable", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("WeddingId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WeddingId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("WeddingTables", t =>
+                        {
+                            t.HasCheckConstraint("CK_WeddingTables_Capacity", "\"Capacity\" > 0");
+                        });
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -981,9 +1018,17 @@ namespace WeddingPlanner.Web.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("WeddingPlanner.Core.Domain.Entities.WeddingTable", "WeddingTable")
+                        .WithMany("Guests")
+                        .HasForeignKey("WeddingTableId", "WeddingId")
+                        .HasPrincipalKey("Id", "WeddingId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.Navigation("Phone");
 
                     b.Navigation("Wedding");
+
+                    b.Navigation("WeddingTable");
                 });
 
             modelBuilder.Entity("WeddingPlanner.Core.Domain.Entities.Notification", b =>
@@ -1194,6 +1239,17 @@ namespace WeddingPlanner.Web.Data.Migrations
                     b.Navigation("Location");
                 });
 
+            modelBuilder.Entity("WeddingPlanner.Core.Domain.Entities.WeddingTable", b =>
+                {
+                    b.HasOne("WeddingPlanner.Core.Domain.Entities.Wedding", "Wedding")
+                        .WithMany()
+                        .HasForeignKey("WeddingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Wedding");
+                });
+
             modelBuilder.Entity("WeddingPlanner.Core.Domain.Entities.Budget", b =>
                 {
                     b.Navigation("Expenses");
@@ -1238,6 +1294,11 @@ namespace WeddingPlanner.Web.Data.Migrations
                     b.Navigation("Timelines");
 
                     b.Navigation("VendorAssignments");
+                });
+
+            modelBuilder.Entity("WeddingPlanner.Core.Domain.Entities.WeddingTable", b =>
+                {
+                    b.Navigation("Guests");
                 });
 #pragma warning restore 612, 618
         }

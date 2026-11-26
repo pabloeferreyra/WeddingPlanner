@@ -43,7 +43,8 @@ public class Guest
     [StringLength(500)]
     public string? CompanionNotes { get; set; }
 
-    public int? TableNumber { get; set; }
+    public Guid? WeddingTableId { get; set; }
+    public WeddingTable? WeddingTable { get; set; }
 
     [StringLength(500)]
     public required string Notes { get; set; }

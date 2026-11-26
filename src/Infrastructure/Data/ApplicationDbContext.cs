@@ -22,6 +22,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Timeline> TimeLines => Set<Timeline>();
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
     public DbSet<VendorPayment> VendorPayments => Set<VendorPayment>();
+    public DbSet<WeddingTable> WeddingTables => Set<WeddingTable>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -36,6 +37,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Guest>()
             .Property(guest => guest.CompanionStatus)
             .HasDefaultValue(CompanionAttendanceStatus.Pending);
+
+        modelBuilder.Entity<WeddingTable>(entity =>
+        {
+            entity.HasAlternateKey(table => new { table.Id, table.WeddingId });
+            entity.HasIndex(table => new { table.WeddingId, table.Name }).IsUnique();
+            entity.ToTable(table => table.HasCheckConstraint("CK_WeddingTables_Capacity", "\"Capacity\" > 0"));
+            entity.HasOne(table => table.Wedding)
+                .WithMany()
+                .HasForeignKey(table => table.WeddingId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Guest>()
+            .HasOne(guest => guest.WeddingTable)
+            .WithMany(table => table.Guests)
+            .HasForeignKey(guest => new { guest.WeddingTableId, guest.WeddingId })
+            .HasPrincipalKey(table => new { table.Id, table.WeddingId })
+            .OnDelete(DeleteBehavior.NoAction);
 
         modelBuilder.Entity<VendorPayment>()
             .HasOne(payment => payment.VendorAssignment)

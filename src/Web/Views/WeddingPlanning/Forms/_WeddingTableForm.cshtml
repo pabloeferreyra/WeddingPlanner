@@ -1,0 +1,34 @@
+@model WeddingPlanner.Web.Models.WeddingTableFormViewModel
+@{
+    var isEdit = Model.Id != Guid.Empty;
+}
+
+<form asp-controller="WeddingPlanning" asp-action="@(isEdit ? "EditWeddingTable" : "CreateWeddingTable")"
+      asp-route-weddingId="@Model.WeddingId" asp-route-id="@Model.Id"
+      method="post" class="planning-form" aria-label="Formulario de mesa">
+    @Html.AntiForgeryToken()
+    <input asp-for="Id" type="hidden" />
+    <input asp-for="WeddingId" type="hidden" />
+    <div asp-validation-summary="ModelOnly" class="planning-form-summary text-danger mb-3" role="alert"></div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="Name" class="form-label">Nombre o número</label>
+            <input asp-for="Name" class="form-control" required />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Capacity" class="form-label">Capacidad máxima</label>
+            <input asp-for="Capacity" type="number" min="1" class="form-control" required />
+            <span asp-validation-for="Capacity" class="text-danger"></span>
+        </div>
+        <div class="col-12">
+            <label asp-for="Notes" class="form-label">Observaciones (opcional)</label>
+            <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
+            <span asp-validation-for="Notes" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">Guardar mesa</button>
+        <button type="button" class="btn btn-outline-secondary" data-close-modal>Cancelar</button>
+    </div>
+</form>

@@ -11,6 +11,7 @@ using WeddingPlanner.Application.UseCases.VendorDocuments;
 using WeddingPlanner.Application.UseCases.VendorPayments;
 using WeddingPlanner.Application.UseCases.Vendors;
 using WeddingPlanner.Application.UseCases.Weddings;
+using WeddingPlanner.Application.UseCases.WeddingTables;
 using WeddingPlanner.Core.Domain.Entities;
 using WeddingPlanner.Core.Domain.Enums;
 using WeddingPlanner.Core.Domain.Services;
@@ -61,7 +62,12 @@ public sealed class WeddingPlanningController(
     UpdateVendorPaymentHandler updateVendorPayment,
     DeleteVendorPaymentHandler deleteVendorPayment,
     GetAllVendorDocumentsHandler getAllVendorDocuments,
-    GetAllVendorsHandler getAllVendors)
+    GetAllVendorsHandler getAllVendors,
+    GetWeddingSeatingHandler getWeddingSeating,
+    GetWeddingTableHandler getWeddingTable,
+    AddWeddingTableHandler addWeddingTable,
+    UpdateWeddingTableHandler updateWeddingTable,
+    DeleteWeddingTableHandler deleteWeddingTable)
     : Controller
 {
     [HttpGet("")]
@@ -121,6 +127,7 @@ public sealed class WeddingPlanningController(
             Wedding = wedding,
             Budget = budget,
             Guests = guests,
+            Seating = await getWeddingSeating.HandleAsync(weddingId),
             ConfirmedMainGuestCount = attendance.ConfirmedMainGuestCount,
             ConfirmedCompanionCount = attendance.ConfirmedCompanionCount,
             ConfirmedAttendeeCount = attendance.ConfirmedAttendeeCount,
@@ -147,7 +154,7 @@ public sealed class WeddingPlanningController(
             return NotFound();
         }
 
-        return PartialView("Forms/_GuestForm", new GuestFormViewModel { WeddingId = weddingId });
+        return await GuestForm(new GuestFormViewModel { WeddingId = weddingId });
     }
 
     [HttpGet("Guests/{id:guid}/Edit")]
@@ -159,7 +166,7 @@ public sealed class WeddingPlanningController(
             return NotFound();
         }
 
-        return PartialView("Forms/_GuestForm", ToFormModel(guest));
+        return await GuestForm(ToFormModel(guest));
     }
 
     [HttpPost("Guests/Create")]
@@ -176,10 +183,18 @@ public sealed class WeddingPlanningController(
         model.WeddingId = weddingId;
         if (!ModelState.IsValid)
         {
-            return PartialView("Forms/_GuestForm", model);
+            return await GuestForm(model);
         }
 
-        await addGuest.HandleAsync(new AddGuestCommand(ToEntity(model, wedding)));
+        try
+        {
+            await addGuest.HandleAsync(new AddGuestCommand(ToEntity(model, wedding)));
+        }
+        catch (ValidationException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return await GuestForm(model);
+        }
         return RedirectToAction(nameof(Index), new { weddingId });
     }
 
@@ -197,11 +212,101 @@ public sealed class WeddingPlanningController(
         model.WeddingId = weddingId;
         if (!ModelState.IsValid)
         {
-            return PartialView("Forms/_GuestForm", model);
+            return await GuestForm(model);
         }
 
         CopyToEntity(model, guest);
-        await updateGuest.HandleAsync(new UpdateGuestCommand(guest));
+        try
+        {
+            await updateGuest.HandleAsync(new UpdateGuestCommand(guest));
+        }
+        catch (ValidationException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return await GuestForm(model);
+        }
+        return RedirectToAction(nameof(Index), new { weddingId });
+    }
+
+    [HttpGet("Tables/Create")]
+    public async Task<IActionResult> CreateWeddingTable(Guid weddingId)
+    {
+        if (!await WeddingExists(weddingId)) return NotFound();
+        return PartialView("Forms/_WeddingTableForm", new WeddingTableFormViewModel { WeddingId = weddingId });
+    }
+
+    [HttpGet("Tables/{id:guid}/Edit")]
+    public async Task<IActionResult> EditWeddingTable(Guid weddingId, Guid id)
+    {
+        var table = await getWeddingTable.HandleAsync(id);
+        if (table is null || table.WeddingId != weddingId) return NotFound();
+        return PartialView("Forms/_WeddingTableForm", new WeddingTableFormViewModel
+        {
+            Id = id, WeddingId = weddingId, Name = table.Name, Capacity = table.Capacity, Notes = table.Notes
+        });
+    }
+
+    [HttpPost("Tables/Create")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateWeddingTable(Guid weddingId, WeddingTableFormViewModel model)
+    {
+        if (!await WeddingExists(weddingId)) return NotFound();
+        model.Id = Guid.Empty;
+        model.WeddingId = weddingId;
+        if (!ModelState.IsValid) return PartialView("Forms/_WeddingTableForm", model);
+        try
+        {
+            await addWeddingTable.HandleAsync(new WeddingTable
+            {
+                WeddingId = weddingId, Name = model.Name, Capacity = model.Capacity, Notes = model.Notes
+            });
+        }
+        catch (ValidationException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return PartialView("Forms/_WeddingTableForm", model);
+        }
+        return RedirectToAction(nameof(Index), new { weddingId });
+    }
+
+    [HttpPost("Tables/{id:guid}/Edit")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditWeddingTable(Guid weddingId, Guid id, WeddingTableFormViewModel model)
+    {
+        var table = await getWeddingTable.HandleAsync(id);
+        if (table is null || table.WeddingId != weddingId) return NotFound();
+        model.Id = id;
+        model.WeddingId = weddingId;
+        if (!ModelState.IsValid) return PartialView("Forms/_WeddingTableForm", model);
+        table.Name = model.Name;
+        table.Capacity = model.Capacity;
+        table.Notes = model.Notes;
+        try
+        {
+            await updateWeddingTable.HandleAsync(table);
+        }
+        catch (ValidationException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return PartialView("Forms/_WeddingTableForm", model);
+        }
+        return RedirectToAction(nameof(Index), new { weddingId });
+    }
+
+    [HttpPost("Tables/{id:guid}/Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteWeddingTable(Guid weddingId, Guid id)
+    {
+        var table = await getWeddingTable.HandleAsync(id);
+        if (table is null || table.WeddingId != weddingId) return NotFound();
+        try
+        {
+            await deleteWeddingTable.HandleAsync(weddingId, id);
+        }
+        catch (ValidationException exception)
+        {
+            TempData["ModuleMessage"] = exception.Message;
+        }
         return RedirectToAction(nameof(Index), new { weddingId });
     }
 
@@ -1008,6 +1113,12 @@ public sealed class WeddingPlanningController(
         return PartialView("Forms/_VendorAssignmentForm", model);
     }
 
+    private async Task<IActionResult> GuestForm(GuestFormViewModel model)
+    {
+        ViewData["WeddingTables"] = (await getWeddingSeating.HandleAsync(model.WeddingId)).Tables;
+        return PartialView("Forms/_GuestForm", model);
+    }
+
     private static GuestFormViewModel ToFormModel(Guest guest) => new()
     {
         Id = guest.Id,
@@ -1025,7 +1136,7 @@ public sealed class WeddingPlanningController(
         CompanionDietaryRestrictions = guest.CompanionDietaryRestrictions,
         CompanionNotes = guest.CompanionNotes,
         MealPreference = guest.MealPreference,
-        TableNumber = guest.TableNumber,
+        WeddingTableId = guest.WeddingTableId,
         Notes = guest.Notes,
         IsFamily = guest.IsFamily,
         IsVIP = guest.IsVIP
@@ -1045,7 +1156,7 @@ public sealed class WeddingPlanningController(
                 : new PhoneNumber { AreaCode = model.PhoneAreaCode, Number = model.PhoneNumber },
             RSVPStatus = model.RSVPStatus,
             MealPreference = model.MealPreference,
-            TableNumber = model.TableNumber,
+            WeddingTableId = model.WeddingTableId,
             Notes = model.Notes ?? string.Empty,
             IsFamily = model.IsFamily,
             IsVIP = model.IsVIP
@@ -1071,7 +1182,7 @@ public sealed class WeddingPlanningController(
         }
         guest.RSVPStatus = model.RSVPStatus;
         guest.MealPreference = model.MealPreference;
-        guest.TableNumber = model.TableNumber;
+        guest.WeddingTableId = model.WeddingTableId;
         guest.Notes = model.Notes ?? string.Empty;
         guest.IsFamily = model.IsFamily;
         guest.IsVIP = model.IsVIP;

@@ -1050,6 +1050,35 @@ body {
   text-align: center;
 }
 .planning-task-list { display: grid; gap: .85rem; }
+.planning-seating-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1.25rem;
+  margin-bottom: 1rem;
+}
+.planning-seating-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  margin-bottom: 1rem;
+}
+.planning-seating-card {
+  background: var(--marfil);
+  border: 1px solid var(--beige);
+  border-radius: .9rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 1rem;
+}
+.planning-seating-card progress { width: 100%; }
+.planning-seating-card details { margin-bottom: 1rem; }
+.planning-seating-card li, .planning-seating-unassigned li {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-block: .5rem;
+}
 .planning-task {
   background: var(--marfil);
   border: 1px solid var(--beige);

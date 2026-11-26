@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using WeddingPlanner.Application.Abstractions.Services;
 using WeddingPlanner.Core.Domain.Entities;
 using WeddingPlanner.Core.Domain.Enums;
 using TaskStatus = WeddingPlanner.Core.Domain.Enums.TaskStatus;
@@ -17,6 +18,7 @@ public sealed class WeddingPlanningViewModel
     public IReadOnlyList<VendorAssignment> VendorAssignments { get; init; } = [];
     public IReadOnlyList<Vendor> Vendors { get; init; } = [];
     public IReadOnlyList<VendorPayment> VendorPayments { get; init; } = [];
+    public WeddingSeatingSummary Seating { get; init; } = new([], []);
 
     public int ConfirmedMainGuestCount { get; init; }
     public int ConfirmedCompanionCount { get; init; }
@@ -129,8 +131,7 @@ public sealed class GuestFormViewModel : IValidatableObject
     [EnumDataType(typeof(MealPreference))]
     public MealPreference MealPreference { get; set; } = MealPreference.Regular;
 
-    [Range(1, int.MaxValue)]
-    public int? TableNumber { get; set; }
+    public Guid? WeddingTableId { get; set; }
 
     [StringLength(500)]
     public string? Notes { get; set; }
@@ -147,6 +148,21 @@ public sealed class GuestFormViewModel : IValidatableObject
                 [nameof(CanBringCompanion)]);
         }
     }
+}
+
+public sealed class WeddingTableFormViewModel
+{
+    public Guid Id { get; set; }
+    public Guid WeddingId { get; set; }
+
+    [Required, StringLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    [Range(1, int.MaxValue)]
+    public int Capacity { get; set; }
+
+    [StringLength(500)]
+    public string? Notes { get; set; }
 }
 
 public sealed class BudgetFormViewModel : IValidatableObject

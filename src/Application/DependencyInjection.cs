@@ -12,6 +12,7 @@ using WeddingPlanner.Application.UseCases.VendorDocuments;
 using WeddingPlanner.Application.UseCases.VendorPayments;
 using WeddingPlanner.Application.UseCases.Vendors;
 using WeddingPlanner.Application.UseCases.Weddings;
+using WeddingPlanner.Application.UseCases.WeddingTables;
 
 namespace WeddingPlanner.Application;
 
@@ -65,6 +66,12 @@ public static class DependencyInjection
         services.AddScoped<GuestExistsHandler>();
         services.AddScoped<GetGuestsByWeddingHandler>();
         services.AddScoped<GetGuestsByStatusHandler>();
+
+        services.AddScoped<GetWeddingSeatingHandler>();
+        services.AddScoped<GetWeddingTableHandler>();
+        services.AddScoped<AddWeddingTableHandler>();
+        services.AddScoped<UpdateWeddingTableHandler>();
+        services.AddScoped<DeleteWeddingTableHandler>();
 
         services.AddScoped<GetAllNotificationsHandler>();
         services.AddScoped<GetNotificationByIdHandler>();

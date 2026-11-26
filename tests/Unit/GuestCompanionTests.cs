@@ -125,7 +125,7 @@ public class GuestCompanionTests
     }
 
     private static GuestService CreateGuestService(StubGuestRepository repository) =>
-        new(repository, repository, NullLogger<GuestService>.Instance);
+        new(repository, repository, NullLogger<GuestService>.Instance, new StubWeddingTableRepository());
 
     private static GuestFormViewModel CreateGuestFormModel(bool canBringCompanion) => new()
     {
@@ -176,5 +176,17 @@ public class GuestCompanionTests
         public IQueryable<Guest> AsQueryable() => throw new NotSupportedException();
         public Task<IReadOnlyList<Guest>> GetGuestsByWedding(Guid weddingId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<Guest>> GetGuestsByStatus(Guid weddingId, GuestStatus status, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    }
+
+    private sealed class StubWeddingTableRepository : IWeddingTableRepository
+    {
+        public Task<T> WithWeddingLockAsync<T>(Guid weddingId, Func<Task<T>> action) => action();
+        public Task<IReadOnlyList<WeddingTable>> GetByWeddingAsync(Guid weddingId) => throw new NotSupportedException();
+        public Task<WeddingTable?> GetByIdAsync(Guid id) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Guest>> GetGuestsByWeddingAsync(Guid weddingId) => throw new NotSupportedException();
+        public Task<Guest?> GetStoredGuestAsync(Guid id) => throw new NotSupportedException();
+        public Task<WeddingTable> AddAsync(WeddingTable table) => throw new NotSupportedException();
+        public Task<WeddingTable> UpdateAsync(WeddingTable table) => throw new NotSupportedException();
+        public Task DeleteAsync(WeddingTable table) => throw new NotSupportedException();
     }
 }

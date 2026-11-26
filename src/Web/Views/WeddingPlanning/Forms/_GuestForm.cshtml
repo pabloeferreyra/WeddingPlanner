@@ -1,8 +1,10 @@
 @model WeddingPlanner.Web.Models.GuestFormViewModel
 @using WeddingPlanner.Core.Domain.Enums
+@using WeddingPlanner.Application.Abstractions.Services
 
 @{
     var isEdit = Model.Id != Guid.Empty;
+    var tables = (IReadOnlyList<WeddingTableSummary>)ViewData["WeddingTables"]!;
 }
 
 <form asp-controller="WeddingPlanning"
@@ -94,9 +96,16 @@
             <select asp-for="MealPreference" asp-items="Html.GetEnumSelectList<MealPreference>()" class="form-select"></select>
         </div>
         <div class="col-md-4">
-            <label asp-for="TableNumber" class="form-label">Mesa</label>
-            <input asp-for="TableNumber" class="form-control" min="1" />
-            <span asp-validation-for="TableNumber" class="text-danger"></span>
+            <label asp-for="WeddingTableId" class="form-label">Mesa</label>
+            <select asp-for="WeddingTableId" class="form-select">
+                <option value="">Sin asignar</option>
+                @foreach (var table in tables)
+                {
+                    <option value="@table.Table.Id">@table.Table.Name (@table.Occupancy.Available lugares disponibles)</option>
+                }
+            </select>
+            <span asp-validation-for="WeddingTableId" class="text-danger"></span>
+            <div class="form-text">Solo se pueden asignar invitados confirmados.</div>
         </div>
         <div class="col-md-4 form-check align-self-end ms-2">
             <input asp-for="IsFamily" class="form-check-input" />

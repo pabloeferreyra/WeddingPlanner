@@ -12,6 +12,7 @@
     var budgetRemaining = ViewData["BudgetRemaining"] is decimal remaining ? remaining : (decimal?)null;
     var categoryLabels = Html.GetEnumSelectList<ExpenseCategory>()
         .ToDictionary(option => int.Parse(option.Value), option => option.Text);
+    var tableNames = Model.Seating.Tables.ToDictionary(table => table.Table.Id, table => table.Table.Name);
 }
 
 <div class="planning-page">
@@ -39,6 +40,7 @@
         <a href="#planning-summary">Resumen</a>
         <a href="#budget">Presupuesto</a>
         <a href="#guests">Invitados</a>
+        <a href="#tables">Mesas</a>
         <a href="#expenses">Gastos</a>
         <a href="#tasks">Tareas</a>
         <a href="#timeline">Cronograma</a>
@@ -247,7 +249,7 @@
                             }
                         </td>
                         <td data-label="Comida">@guest.MealPreference</td>
-                        <td data-label="Mesa">@(guest.TableNumber?.ToString() ?? "—")</td>
+                        <td data-label="Mesa">@(guest.WeddingTableId is Guid tableId ? tableNames.GetValueOrDefault(tableId, "Mesa no disponible") : "—")</td>
                         <td data-label="Etiquetas">
                             @if (guest.IsFamily) { <span class="planning-tag">Familia</span> }
                             @if (guest.IsVIP) { <span class="planning-tag">VIP</span> }
@@ -269,6 +271,110 @@
                 </tbody>
             </table>
         </div>
+    </section>
+
+    <section class="planning-module" id="tables" aria-labelledby="tables-heading">
+        <div class="planning-module-heading">
+            <div class="planning-module-title">
+                <span class="planning-module-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M3 9h18M5 9v9m14-9v9M4 5h16v4H4z" /></svg>
+                </span>
+                <div>
+                    <p class="eyebrow">Distribución de invitados</p>
+                    <h2 id="tables-heading">Mesas <span class="planning-count">@Model.Seating.Tables.Count</span></h2>
+                    <p>Organizá las plazas y las asignaciones de cada mesa.</p>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary" data-open-modal data-modal-id="GlobalModal"
+                    data-url="@Url.Action("CreateWeddingTable", "WeddingPlanning", new { weddingId })"
+                    data-title="Crear mesa">Crear mesa</button>
+        </div>
+        <div class="planning-seating-summary">
+            <span>Mesas: <strong>@Model.Seating.Tables.Count</strong></span>
+            <span>Capacidad: <strong>@Model.Seating.TotalCapacity</strong></span>
+            <span>Ocupadas: <strong>@Model.Seating.Occupied</strong></span>
+            <span>Disponibles: <strong>@Model.Seating.Available</strong></span>
+            <span>Invitados sin mesa: <strong>@Model.Seating.UnassignedConfirmedGuests.Count</strong></span>
+            <span>Mesas completas: <strong>@Model.Seating.FullTables</strong></span>
+        </div>
+        <div class="planning-seating-grid">
+            @foreach (var summary in Model.Seating.Tables)
+            {
+                var table = summary.Table;
+                var occupancy = summary.Occupancy;
+                var status = occupancy.Occupied == 0 ? "Disponible" : occupancy.Available == 0 ? "Completa" : "Parcialmente ocupada";
+                <article class="planning-seating-card">
+                    <div class="planning-task-heading">
+                        <h3>@table.Name</h3>
+                        <span class="planning-badge">@status</span>
+                    </div>
+                    <p>@occupancy.Occupied de @table.Capacity plazas ocupadas · @occupancy.Available disponibles</p>
+                    <progress value="@occupancy.Occupied" max="@table.Capacity" aria-label="Ocupación de @table.Name">@occupancy.Percentage.ToString("0.#")%</progress>
+                    <p>@occupancy.Percentage.ToString("0.#")% de ocupación</p>
+                    @if (!string.IsNullOrWhiteSpace(table.Notes))
+                    {
+                        <p>@table.Notes</p>
+                    }
+                    <details>
+                        <summary>Ver invitados (@summary.Guests.Count)</summary>
+                        @if (summary.Guests.Count == 0)
+                        {
+                            <p>Sin invitados asignados.</p>
+                        }
+                        else
+                        {
+                            <ul>
+                                @foreach (var guest in summary.Guests)
+                                {
+                                    <li>
+                                        @guest.FirstName @guest.LastName
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                                data-open-modal data-modal-id="GlobalModal"
+                                                data-url="@Url.Action("EditGuest", "WeddingPlanning", new { weddingId, id = guest.Id })"
+                                                data-title="Editar asignación de invitado">Cambiar mesa</button>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </details>
+                    <div class="planning-actions">
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                data-open-modal data-modal-id="GlobalModal"
+                                data-url="@Url.Action("EditWeddingTable", "WeddingPlanning", new { weddingId, id = table.Id })"
+                                data-title="Editar mesa">Editar</button>
+                        <form asp-controller="WeddingPlanning" asp-action="DeleteWeddingTable"
+                              asp-route-weddingId="@weddingId" asp-route-id="@table.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                        </form>
+                    </div>
+                </article>
+            }
+        </div>
+        @if (Model.Seating.Tables.Count == 0)
+        {
+            <p class="planning-empty-state">Todavía no hay mesas creadas.</p>
+        }
+        <h3>Invitados confirmados sin mesa</h3>
+        @if (Model.Seating.UnassignedConfirmedGuests.Count == 0)
+        {
+            <p>No hay invitados confirmados sin asignar.</p>
+        }
+        else
+        {
+            <ul class="planning-seating-unassigned">
+                @foreach (var guest in Model.Seating.UnassignedConfirmedGuests)
+                {
+                    <li>
+                        <span>@guest.FirstName @guest.LastName</span>
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                data-open-modal data-modal-id="GlobalModal"
+                                data-url="@Url.Action("EditGuest", "WeddingPlanning", new { weddingId, id = guest.Id })"
+                                data-title="Asignar invitado a una mesa">Asignar mesa</button>
+                    </li>
+                }
+            </ul>
+        }
     </section>
 
     <section class="planning-module" id="expenses" aria-labelledby="expenses-heading">

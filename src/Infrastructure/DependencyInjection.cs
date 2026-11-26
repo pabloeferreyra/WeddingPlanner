@@ -51,6 +51,8 @@ public static class DependencyInjection
         services.AddScoped<IVendorPaymentRepository, VendorPaymentRepository>();
         services.AddScoped<IWeddingRepository, WeddingRepository>();
         services.AddScoped<IGuestRepository, GuestRepository>();
+        services.AddScoped<IWeddingTableRepository, WeddingTableRepository>();
+        services.AddScoped<IWeddingTableService, WeddingTableService>();
         services.AddScoped<IGuestService, GuestService>();
         services.AddScoped<IWeddingService, WeddingService>();
         services.AddScoped<IBudgetRepository, BudgetRepository>();
