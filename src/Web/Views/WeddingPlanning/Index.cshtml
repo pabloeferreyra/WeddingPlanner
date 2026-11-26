@@ -378,7 +378,7 @@
                 <article class="planning-task">
                     <div class="planning-task-heading">
                         <div>
-                            <p class="eyebrow">@task.Category</p>
+                            <p class="eyebrow">@Html.DisplayFor(_ => task.Category)</p>
                             <h3>@task.Title</h3>
                         </div>
                         <span class="planning-badge planning-badge-@task.Status.ToString().ToLowerInvariant()">@taskStatus</span>
@@ -467,7 +467,7 @@
                     <tr>
                         <td data-label="Actividad"><strong>@item.EventName</strong></td>
                         <td data-label="Fecha">@item.ScheduledDate.ToString("g")</td>
-                        <td data-label="Etapa">@item.Category</td>
+                        <td data-label="Etapa">@Html.DisplayFor(_ => item.Category)</td>
                         <td data-label="Lugar">@(item.Location ?? "—")</td>
                         <td data-label="Estado"><span class="planning-badge @(item.IsCompleted ? "planning-badge-completed" : "planning-badge-pending")">@(item.IsCompleted ? "Completada" : "Pendiente")</span></td>
                         <td data-label="Acciones" class="planning-actions">
