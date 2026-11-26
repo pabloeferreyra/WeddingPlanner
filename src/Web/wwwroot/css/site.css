@@ -1026,9 +1026,11 @@ body {
 }
 .planning-badge { background: var(--beige); color: var(--verde-profundo); }
 .planning-badge-confirmed,
+.planning-badge-paid,
 .planning-badge-completed { background: #dfece4; color: #1d5e40; }
 .planning-badge-declined,
 .planning-badge-failed,
+.planning-badge-overdue,
 .planning-badge-blocked { background: #f3e0dc; color: #773c34; }
 .planning-badge-inprogress,
 .planning-badge-inreview { background: #e8ded0; color: #4d4338; }

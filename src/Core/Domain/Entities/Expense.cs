@@ -26,6 +26,7 @@ public class Expense
     public string? VendorName { get; set; }
 
     public DateTime ExpenseDate { get; set; }
+    public DateTime? DueDate { get; set; }
     public DateTime? PaymentDate { get; set; }
 
     public bool IsRecurring { get; set; }
@@ -37,4 +38,16 @@ public class Expense
     public string? ReceiptUrl { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+
+    public ExpensePaymentStatus GetPaymentStatus(DateOnly asOfDate)
+    {
+        if (PaymentDate.HasValue)
+        {
+            return ExpensePaymentStatus.Paid;
+        }
+
+        return DueDate.HasValue && DateOnly.FromDateTime(DueDate.Value) < asOfDate
+            ? ExpensePaymentStatus.Overdue
+            : ExpensePaymentStatus.Pending;
+    }
 }

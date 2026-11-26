@@ -21,6 +21,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Timeline> TimeLines => Set<Timeline>();
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
+    public DbSet<VendorPayment> VendorPayments => Set<VendorPayment>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -35,6 +36,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Guest>()
             .Property(guest => guest.CompanionStatus)
             .HasDefaultValue(CompanionAttendanceStatus.Pending);
+
+        modelBuilder.Entity<VendorPayment>()
+            .HasOne(payment => payment.VendorAssignment)
+            .WithMany(assignment => assignment.Payments)
+            .HasForeignKey(payment => payment.VendorAssignmentId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Budget>()
             .Property(budget => budget.CategoryAllocations)

@@ -25,10 +25,7 @@ public class VendorAssignment
     [Range(0, 100)]
     public decimal DepositPercentage { get; set; } = 50;
 
-    public decimal DepositPaid { get; set; } = 0;
-    public decimal TotalPaid { get; set; } = 0;
-
-    public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
+    public decimal OpeningBalancePaid { get; set; }
 
     [StringLength(500)]
     public string? Notes { get; set; }
@@ -38,4 +35,12 @@ public class VendorAssignment
 
     // Navigation
     public ICollection<VendorDocument> Contracts { get; set; } = [];
+    public ICollection<VendorPayment> Payments { get; set; } = [];
+
+    public PaymentStatus GetPaymentStatus(decimal totalPaid, bool hasOverduePayments) =>
+        PaymentAmount > 0 && totalPaid >= PaymentAmount
+            ? PaymentStatus.Completed
+            : hasOverduePayments
+                ? PaymentStatus.Overdue
+                : PaymentStatus.Pending;
 }

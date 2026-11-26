@@ -10,7 +10,6 @@
             }
 
             updateCompanionFields(form);
-            updateAssignmentBalance(form);
         });
     }
 
@@ -26,25 +25,6 @@
             const status = fields.querySelector('[data-companion-status]');
             if (status) status.value = status.dataset.pendingValue;
         }
-    }
-
-    function updateAssignmentBalance(form) {
-        const output = form.querySelector('[data-assignment-balance]');
-        const amountField = form.querySelector('[name="PaymentAmount"]');
-        const paidField = form.querySelector('[name="TotalPaid"]');
-        if (!output || !amountField || !paidField) return;
-
-        const amount = Number(amountField.value);
-        const paid = Number(paidField.value);
-        if (!Number.isFinite(amount) || !Number.isFinite(paid)) {
-            output.textContent = '—';
-            return;
-        }
-
-        output.textContent = new Intl.NumberFormat(output.dataset.numberCulture || undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount - paid);
     }
 
     function associateValidationErrors(container) {
@@ -75,12 +55,6 @@
         if (toggle.matches('[data-companion-toggle]') && toggle.form) {
             updateCompanionFields(toggle.form);
         }
-    });
-
-    document.addEventListener('input', event => {
-        const field = event.target;
-        if (!(field instanceof HTMLInputElement) || !['PaymentAmount', 'TotalPaid'].includes(field.name)) return;
-        if (field.form) updateAssignmentBalance(field.form);
     });
 
     document.addEventListener('submit', async event => {

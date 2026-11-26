@@ -42,7 +42,7 @@
                 <option value="">Sin asignación</option>
                 @foreach (var assignment in assignments)
                 {
-                    <option value="@assignment.Id">@assignment.ContractDate.ToString("d") · @assignment.PaymentStatus</option>
+                    <option value="@assignment.Id">@assignment.ContractDate.ToString("d") · @assignment.PaymentAmount.ToString("C")</option>
                 }
             </select>
             <span asp-validation-for="VendorAssignmentId" class="text-danger"></span>

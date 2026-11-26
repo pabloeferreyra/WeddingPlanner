@@ -8,5 +8,7 @@ public enum PaymentStatus
     [Display(Name = "Completado")]
     Completed = 2,
     [Display(Name = "Fallido")]
-    Failed = 3
+    Failed = 3,
+    [Display(Name = "Vencido")]
+    Overdue = 4
 }

@@ -37,6 +37,11 @@
         <div class="col-md-6">
             <label asp-for="ExpenseDate" class="form-label">Fecha del gasto</label>
             <input asp-for="ExpenseDate" type="date" class="form-control" />
+            <span asp-validation-for="ExpenseDate" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="DueDate" class="form-label">Vencimiento (opcional)</label>
+            <input asp-for="DueDate" type="date" class="form-control" />
         </div>
         <div class="col-md-6">
             <label asp-for="PaymentDate" class="form-label">Fecha de pago</label>

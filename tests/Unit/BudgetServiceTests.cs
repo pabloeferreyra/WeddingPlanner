@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Logging.Abstractions;
 using WeddingPlanner.Application.Abstractions.Persistence;
 using WeddingPlanner.Application.Implementations;
@@ -29,6 +30,30 @@ public class BudgetServiceTests
         Assert.NotNull(result);
         Assert.Equal(expensesTotal, result.CurrentSpent);
         Assert.Equal(budget.TotalAmount - expensesTotal, result.GetRemainingBudget());
+    }
+
+    [Fact]
+    public async Task AddBudget_rejects_negative_category_allocations()
+    {
+        var service = new BudgetService(
+            new StubBudgetRepository(new Budget(), 0),
+            new StubRepository(),
+            NullLogger<BudgetService>.Instance);
+        var budget = new Budget
+        {
+            TotalAmount = 100,
+            CategoryAllocations = new Dictionary<string, decimal> { ["Venue"] = -1 }
+        };
+
+        await Assert.ThrowsAsync<ValidationException>(() => service.AddBudget(budget));
+    }
+
+    [Fact]
+    public void Percentage_spent_is_zero_when_total_budget_is_zero()
+    {
+        var budget = new Budget { CurrentSpent = 25 };
+
+        Assert.Equal(0, budget.GetPercentageSpent());
     }
 
     private sealed class StubBudgetRepository(Budget budget, decimal expensesTotal) : IBudgetRepository

@@ -16,14 +16,83 @@ public sealed class WeddingPlanningViewModel
     public IReadOnlyList<Timeline> Timelines { get; init; } = [];
     public IReadOnlyList<VendorAssignment> VendorAssignments { get; init; } = [];
     public IReadOnlyList<Vendor> Vendors { get; init; } = [];
+    public IReadOnlyList<VendorPayment> VendorPayments { get; init; } = [];
 
     public int ConfirmedMainGuestCount => Guests.Count(guest =>
         guest.RSVPStatus == GuestStatus.Confirmed);
 
     public int ConfirmedCompanionCount => Guests.Count(guest =>
-        guest.CanBringCompanion && guest.CompanionStatus == CompanionAttendanceStatus.Confirmed);
+        guest.RSVPStatus != GuestStatus.Declined &&
+        guest.CanBringCompanion &&
+        guest.CompanionStatus == CompanionAttendanceStatus.Confirmed);
 
     public int ConfirmedAttendeeCount => ConfirmedMainGuestCount + ConfirmedCompanionCount;
+
+    public IReadOnlyList<BudgetCategorySummary> BudgetCategorySummaries
+    {
+        get
+        {
+            if (Budget is null)
+            {
+                return [];
+            }
+
+            var expensesByCategory = Expenses
+                .GroupBy(expense => expense.Category)
+                .ToDictionary(group => group.Key, group => group.Sum(expense => expense.Amount));
+
+            return Enum.GetValues<ExpenseCategory>()
+                .Select(category => new BudgetCategorySummary(
+                    category,
+                    Budget.CategoryAllocations.GetValueOrDefault(category.ToString()),
+                    expensesByCategory.GetValueOrDefault(category)))
+                .Where(summary => summary.AllocatedAmount != 0 || summary.ActualSpent != 0)
+                .ToList();
+        }
+    }
+
+    public IReadOnlyList<VendorAssignmentPaymentSummary> VendorAssignmentPaymentSummaries
+        {
+            get
+            {
+                var paymentsByAssignment = VendorPayments
+                    .GroupBy(payment => payment.VendorAssignmentId)
+                    .ToDictionary(group => group.Key, group => group.ToList());
+                var asOfDate = DateOnly.FromDateTime(DateTime.Today);
+
+                return VendorAssignments.Select(assignment =>
+                {
+                    var payments = paymentsByAssignment.GetValueOrDefault(assignment.Id) ?? [];
+                    var totalPaid = assignment.OpeningBalancePaid
+                        + payments.Where(payment => payment.PaymentDate.HasValue).Sum(payment => payment.Amount);
+                    var totalCommitted = assignment.OpeningBalancePaid
+                        + payments.Sum(payment => payment.Amount);
+                    var hasOverduePayments = payments.Any(payment =>
+                        payment.GetStatus(asOfDate) == VendorPaymentStatus.Overdue);
+
+                    return new VendorAssignmentPaymentSummary(
+                        assignment,
+                        totalPaid,
+                        totalCommitted,
+                        assignment.GetPaymentStatus(totalPaid, hasOverduePayments));
+                }).ToList();
+            }
+    }
+}
+
+public sealed record BudgetCategorySummary(
+    ExpenseCategory Category,
+    decimal AllocatedAmount,
+    decimal ActualSpent);
+
+public sealed record VendorAssignmentPaymentSummary(
+    VendorAssignment Assignment,
+    decimal TotalPaid,
+    decimal TotalCommitted,
+    PaymentStatus PaymentStatus)
+{
+    public decimal RemainingBalance => Assignment.PaymentAmount - TotalPaid;
+    public decimal UnscheduledAmount => Assignment.PaymentAmount - TotalCommitted;
 }
 
 public sealed class GuestFormViewModel : IValidatableObject
@@ -86,16 +155,49 @@ public sealed class GuestFormViewModel : IValidatableObject
     }
 }
 
-public sealed class BudgetFormViewModel
+public sealed class BudgetFormViewModel : IValidatableObject
 {
     public Guid Id { get; set; }
     public Guid WeddingId { get; set; }
 
     [Range(0.01, double.MaxValue)]
     public decimal TotalAmount { get; set; }
+
+    public Dictionary<string, decimal?> CategoryAllocations { get; set; } = [];
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (CategoryAllocations is null)
+        {
+            yield return new ValidationResult(
+                "Las asignaciones por categoría no son válidas.",
+                [nameof(CategoryAllocations)]);
+            yield break;
+        }
+
+        foreach (var allocation in CategoryAllocations)
+        {
+            if (!Enum.TryParse<ExpenseCategory>(allocation.Key, out var category)
+                || !string.Equals(Enum.GetName(category), allocation.Key, StringComparison.Ordinal)
+                || !Enum.IsDefined(category))
+            {
+                yield return new ValidationResult(
+                    "La asignación contiene una categoría inválida.",
+                    [nameof(CategoryAllocations)]);
+                yield break;
+            }
+
+            if (allocation.Value < 0)
+            {
+                yield return new ValidationResult(
+                    "Las asignaciones por categoría no pueden ser negativas.",
+                    [nameof(CategoryAllocations)]);
+            }
+        }
+    }
 }
 
-public sealed class ExpenseFormViewModel
+public sealed class ExpenseFormViewModel : IValidatableObject
 {
     public Guid Id { get; set; }
     public Guid WeddingId { get; set; }
@@ -117,6 +219,9 @@ public sealed class ExpenseFormViewModel
     public DateTime ExpenseDate { get; set; } = DateTime.Today;
 
     [DataType(DataType.Date)]
+    public DateTime? DueDate { get; set; }
+
+    [DataType(DataType.Date)]
     public DateTime? PaymentDate { get; set; }
 
     public bool IsRecurring { get; set; }
@@ -129,6 +234,16 @@ public sealed class ExpenseFormViewModel
 
     [Url]
     public string? ReceiptUrl { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (IsRecurring && RecurrenceType is null)
+        {
+            yield return new ValidationResult(
+                "Selecciona la frecuencia del gasto recurrente.",
+                [nameof(RecurrenceType)]);
+        }
+    }
 }
 
 public sealed class TaskItemFormViewModel
@@ -222,14 +337,33 @@ public sealed class VendorAssignmentFormViewModel
     [Range(0, 100)]
     public decimal DepositPercentage { get; set; } = 50;
 
-    [Range(0, double.MaxValue)]
-    public decimal DepositPaid { get; set; }
+    [StringLength(500)]
+    public string? Notes { get; set; }
+}
 
-    [Range(0, double.MaxValue)]
-    public decimal TotalPaid { get; set; }
+public sealed class VendorPaymentFormViewModel
+{
+    public Guid Id { get; set; }
+    public Guid WeddingId { get; set; }
+    public Guid VendorAssignmentId { get; set; }
 
-    [EnumDataType(typeof(PaymentStatus))]
-    public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
+    [Range(0.01, double.MaxValue)]
+    public decimal Amount { get; set; }
+
+    [EnumDataType(typeof(VendorPaymentType))]
+    public VendorPaymentType Type { get; set; } = VendorPaymentType.Partial;
+
+    [DataType(DataType.Date)]
+    public DateTime? DueDate { get; set; }
+
+    [DataType(DataType.Date)]
+    public DateTime? PaymentDate { get; set; }
+
+    [StringLength(100)]
+    public string? PaymentMethod { get; set; }
+
+    [Url]
+    public string? ReceiptUrl { get; set; }
 
     [StringLength(500)]
     public string? Notes { get; set; }

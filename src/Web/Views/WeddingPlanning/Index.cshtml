@@ -10,6 +10,8 @@
     var totalProgressItems = ViewData["TotalProgressItems"] is int totalItems ? totalItems : 0;
     var progressPercent = ViewData["PlanningProgressPercent"] is int percent ? percent : (int?)null;
     var budgetRemaining = ViewData["BudgetRemaining"] is decimal remaining ? remaining : (decimal?)null;
+    var categoryLabels = Html.GetEnumSelectList<ExpenseCategory>()
+        .ToDictionary(option => int.Parse(option.Value), option => option.Text);
 }
 
 <div class="planning-page">
@@ -140,9 +142,34 @@
         {
             <dl class="planning-finance-grid">
                 <div><dt>Presupuesto total</dt><dd>@Model.Budget.TotalAmount.ToString("C")</dd></div>
-                <div><dt>Gastado hasta ahora</dt><dd>@Model.Budget.CurrentSpent.ToString("C")</dd></div>
+                <div><dt>Gastos registrados</dt><dd>@Model.Budget.CurrentSpent.ToString("C")</dd></div>
                 <div><dt>Disponible</dt><dd>@budgetRemaining?.ToString("C")</dd></div>
+                <div><dt>Consumido</dt><dd>@Model.Budget.GetPercentageSpent().ToString("0.#")%</dd></div>
             </dl>
+            <h3>Asignado por categoría vs. gastos registrados</h3>
+            @if (Model.BudgetCategorySummaries.Count == 0)
+            {
+                <p class="planning-empty-state">Todavía no hay asignaciones ni gastos por categoría.</p>
+            }
+            else
+            {
+                <div class="planning-table-wrap">
+                    <table class="table planning-table">
+                        <caption class="visually-hidden">Presupuesto asignado y gastos registrados por categoría</caption>
+                        <thead><tr><th scope="col">Categoría</th><th scope="col">Asignado</th><th scope="col">Gastos registrados</th></tr></thead>
+                        <tbody>
+                        @foreach (var summary in Model.BudgetCategorySummaries)
+                        {
+                            <tr>
+                                <th scope="row" data-label="Categoría">@categoryLabels[(int)summary.Category]</th>
+                                <td data-label="Asignado">@summary.AllocatedAmount.ToString("C")</td>
+                                <td data-label="Gastos registrados">@summary.ActualSpent.ToString("C")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
         }
     </section>
 
@@ -180,7 +207,10 @@
                         GuestStatus.Declined => "No asiste",
                         _ => "Pendiente"
                     };
-                    var companionStatus = guest.CompanionStatus switch
+                    var effectiveCompanionStatus = guest.RSVPStatus == GuestStatus.Declined
+                        ? CompanionAttendanceStatus.Declined
+                        : guest.CompanionStatus;
+                    var companionStatus = effectiveCompanionStatus switch
                     {
                         CompanionAttendanceStatus.Confirmed => "Asistirá acompañado",
                         CompanionAttendanceStatus.Declined => "No asistirá acompañado",
@@ -197,7 +227,7 @@
                             }
                             else
                             {
-                                <span class="planning-badge planning-badge-@guest.CompanionStatus.ToString().ToLowerInvariant()">@companionStatus</span>
+                                <span class="planning-badge planning-badge-@effectiveCompanionStatus.ToString().ToLowerInvariant()">@companionStatus</span>
                                 @if (!string.IsNullOrWhiteSpace(guest.CompanionName))
                                 {
                                     <span class="d-block">@guest.CompanionName</span>
@@ -264,20 +294,29 @@
         <div class="planning-table-wrap">
             <table class="table planning-table">
                 <caption class="visually-hidden">Gastos de @Model.Wedding.Title</caption>
-                <thead><tr><th scope="col">Descripción</th><th scope="col">Categoría</th><th scope="col">Fecha</th><th scope="col">Proveedor</th><th scope="col">Importe</th><th scope="col">Acciones</th></tr></thead>
+                <thead><tr><th scope="col">Descripción</th><th scope="col">Categoría</th><th scope="col">Fecha</th><th scope="col">Vencimiento</th><th scope="col">Proveedor</th><th scope="col">Importe</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead>
                 <tbody>
                 @if (Model.Expenses.Count == 0)
                 {
-                    <tr><td colspan="6"><div class="planning-empty-state">@(Model.Budget is null ? "Crea un presupuesto para registrar gastos." : "Todavía no hay gastos registrados.")</div></td></tr>
+                    <tr><td colspan="8"><div class="planning-empty-state">@(Model.Budget is null ? "Crea un presupuesto para registrar gastos." : "Todavía no hay gastos registrados.")</div></td></tr>
                 }
                 @foreach (var expense in Model.Expenses)
                 {
+                    var paymentStatus = expense.GetPaymentStatus(DateOnly.FromDateTime(DateTime.Today));
+                    var paymentStatusLabel = paymentStatus switch
+                    {
+                        ExpensePaymentStatus.Paid => "Pagado",
+                        ExpensePaymentStatus.Overdue => "Vencido",
+                        _ => "Pendiente"
+                    };
                     <tr>
                         <td data-label="Descripción"><strong>@expense.Description</strong></td>
-                        <td data-label="Categoría">@expense.Category</td>
+                        <td data-label="Categoría">@categoryLabels[(int)expense.Category]</td>
                         <td data-label="Fecha">@expense.ExpenseDate.ToString("d")</td>
+                        <td data-label="Vencimiento">@(expense.DueDate?.ToString("d") ?? "—")</td>
                         <td data-label="Proveedor">@(expense.VendorName ?? "—")</td>
                         <td data-label="Importe"><strong>@expense.Amount.ToString("C")</strong></td>
+                        <td data-label="Estado"><span class="planning-badge planning-badge-@paymentStatus.ToString().ToLowerInvariant()">@paymentStatusLabel</span></td>
                         <td data-label="Acciones" class="planning-actions">
                             <button type="button" class="btn btn-sm btn-outline-primary"
                                     data-open-modal data-modal-id="GlobalModal"
@@ -475,13 +514,16 @@
                 {
                     <tr><td colspan="7"><div class="planning-empty-state">Todavía no hay proveedores asignados.</div></td></tr>
                 }
-                @foreach (var assignment in Model.VendorAssignments)
+                @foreach (var summary in Model.VendorAssignmentPaymentSummaries)
                 {
+                    var assignment = summary.Assignment;
                     var vendor = Model.Vendors.FirstOrDefault(candidate => candidate.Id == assignment.VendorId);
-                    var paymentStatus = assignment.PaymentStatus switch
+                    var paymentCount = Model.VendorPayments.Count(payment => payment.VendorAssignmentId == assignment.Id);
+                    var paymentStatus = summary.PaymentStatus switch
                     {
                         PaymentStatus.Completed => "Pagado",
                         PaymentStatus.Failed => "Fallido",
+                        PaymentStatus.Overdue => "Vencido",
                         _ => "Pendiente"
                     };
                     <tr>
@@ -494,16 +536,98 @@
                         </td>
                         <td data-label="Contrato">@assignment.ContractDate.ToString("d")</td>
                         <td data-label="Importe">@assignment.PaymentAmount.ToString("C")</td>
-                        <td data-label="Pagado">@assignment.TotalPaid.ToString("C")</td>
-                        <td data-label="Saldo"><strong>@((assignment.PaymentAmount - assignment.TotalPaid).ToString("C"))</strong></td>
-                        <td data-label="Estado"><span class="planning-badge planning-badge-@assignment.PaymentStatus.ToString().ToLowerInvariant()">@paymentStatus</span></td>
+                        <td data-label="Pagado">@summary.TotalPaid.ToString("C")</td>
+                        <td data-label="Saldo"><strong>@summary.RemainingBalance.ToString("C")</strong></td>
+                        <td data-label="Estado"><span class="planning-badge planning-badge-@summary.PaymentStatus.ToString().ToLowerInvariant()">@paymentStatus</span></td>
                         <td data-label="Acciones" class="planning-actions">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    data-open-modal data-modal-id="GlobalModal"
+                                    data-url="@Url.Action("CreateVendorPayment", "WeddingPlanning", new { weddingId, assignmentId = assignment.Id })"
+                                    data-title="Registrar cuota o pago">Registrar pago</button>
                             <button type="button" class="btn btn-sm btn-outline-primary"
                                     data-open-modal data-modal-id="GlobalModal"
                                     data-url="@Url.Action("EditVendorAssignment", "WeddingPlanning", new { weddingId, id = assignment.Id })"
                                     data-title="Editar asignación">Editar</button>
                             <form asp-controller="WeddingPlanning" asp-action="DeleteVendorAssignment"
                                   asp-route-weddingId="@weddingId" asp-route-id="@assignment.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="planning-section" aria-labelledby="vendor-payments-heading">
+        <div class="planning-section-heading">
+            <div class="planning-section-title">
+                <span class="planning-section-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zM3 10h18m-14 4h4" /></svg>
+                </span>
+                <div>
+                    <p class="eyebrow">Cuotas e historial</p>
+                    <h2 id="vendor-payments-heading">Pagos a proveedores <span class="planning-count">@Model.VendorPayments.Count</span></h2>
+                    <p>Consulta vencimientos, pagos realizados y comprobantes.</p>
+                </div>
+            </div>
+        </div>
+        <div class="planning-table-wrap">
+            <table class="table planning-table">
+                <caption class="visually-hidden">Cuotas y pagos de proveedores para @Model.Wedding.Title</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Proveedor</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Vencimiento</th>
+                        <th scope="col">Fecha de pago</th>
+                        <th scope="col">Importe</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model.VendorPayments.Count == 0)
+                {
+                    <tr><td colspan="7"><div class="planning-empty-state">Todavía no hay cuotas o pagos registrados.</div></td></tr>
+                }
+                @foreach (var payment in Model.VendorPayments)
+                {
+                    var assignment = Model.VendorAssignments.FirstOrDefault(candidate => candidate.Id == payment.VendorAssignmentId);
+                    var vendor = assignment is null
+                        ? null
+                        : Model.Vendors.FirstOrDefault(candidate => candidate.Id == assignment.VendorId);
+                    var paymentType = payment.Type switch
+                    {
+                        VendorPaymentType.Deposit => "Anticipo",
+                        VendorPaymentType.Final => "Pago final",
+                        _ => "Pago parcial"
+                    };
+                    var paymentStatus = payment.GetStatus(DateOnly.FromDateTime(DateTime.Today));
+                    var paymentStatusLabel = paymentStatus switch
+                    {
+                        VendorPaymentStatus.Paid => "Pagado",
+                        VendorPaymentStatus.Overdue => "Vencido",
+                        _ => "Pendiente"
+                    };
+                    <tr>
+                        <td data-label="Proveedor"><strong>@(vendor?.BusinessName ?? "Proveedor no disponible")</strong></td>
+                        <td data-label="Tipo">@paymentType</td>
+                        <td data-label="Vencimiento">@(payment.DueDate?.ToString("d") ?? "—")</td>
+                        <td data-label="Fecha de pago">@(payment.PaymentDate?.ToString("d") ?? "—")</td>
+                        <td data-label="Importe">@payment.Amount.ToString("C")</td>
+                        <td data-label="Estado"><span class="planning-badge planning-badge-@paymentStatus.ToString().ToLowerInvariant()">@paymentStatusLabel</span></td>
+                        <td data-label="Acciones" class="planning-actions">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    data-open-modal data-modal-id="GlobalModal"
+                                    data-url="@Url.Action("EditVendorPayment", "WeddingPlanning", new { weddingId, assignmentId = payment.VendorAssignmentId, id = payment.Id })"
+                                    data-title="Editar cuota o pago">Editar</button>
+                            <form asp-controller="WeddingPlanning" asp-action="DeleteVendorPayment"
+                                  asp-route-weddingId="@weddingId"
+                                  asp-route-assignmentId="@payment.VendorAssignmentId"
+                                  asp-route-id="@payment.Id" method="post">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
                             </form>

@@ -13,9 +13,17 @@ IGuestRepository guestRepository, ILogger<GuestService> logger) : IGuestService
 
     public async Task<Guest> GetGuestByIdAsync(Guid guestId) => await genericRepository.GetByIdAsync(guestId);
 
-    public async Task<Guest> AddGuestAsync(Guest guest) => await genericRepository.AddAsync(guest);
+    public async Task<Guest> AddGuestAsync(Guest guest)
+    {
+        NormalizeCompanionAttendance(guest);
+        return await genericRepository.AddAsync(guest);
+    }
 
-    public async Task<Guest> UpdateGuestAsync(Guest guest) => await genericRepository.UpdateAsync(guest);
+    public async Task<Guest> UpdateGuestAsync(Guest guest)
+    {
+        NormalizeCompanionAttendance(guest);
+        return await genericRepository.UpdateAsync(guest);
+    }
 
     public async Task DeleteGuestAsync(Guid guestId) => await genericRepository.DeleteAsync(guestId);
 
@@ -24,4 +32,20 @@ IGuestRepository guestRepository, ILogger<GuestService> logger) : IGuestService
     public async Task<IReadOnlyList<Guest>> GetGuestsByWedding(Guid weddingId, CancellationToken cancellationToken = default) => await guestRepository.GetGuestsByWedding(weddingId, cancellationToken);
 
     public async Task<IReadOnlyList<Guest>> GetGuestsByStatus(Guid weddingId, GuestStatus status, CancellationToken cancellationToken = default) => await guestRepository.GetGuestsByStatus(weddingId, status, cancellationToken);
+
+    private static void NormalizeCompanionAttendance(Guest guest)
+    {
+        if (!guest.CanBringCompanion)
+        {
+            guest.CompanionStatus = CompanionAttendanceStatus.Pending;
+            guest.CompanionName = null;
+            guest.CompanionMealPreference = null;
+            guest.CompanionDietaryRestrictions = null;
+            guest.CompanionNotes = null;
+        }
+        else if (guest.RSVPStatus == GuestStatus.Declined)
+        {
+            guest.CompanionStatus = CompanionAttendanceStatus.Declined;
+        }
+    }
 }

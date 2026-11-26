@@ -270,6 +270,9 @@ namespace WeddingPlanner.Web.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<DateTime>("ExpenseDate")
                         .HasColumnType("timestamp without time zone");
 
@@ -325,6 +328,7 @@ namespace WeddingPlanner.Web.Data.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.Property<int>("CompanionStatus")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
@@ -711,9 +715,6 @@ namespace WeddingPlanner.Web.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<decimal>("DepositPaid")
-                        .HasColumnType("numeric");
-
                     b.Property<decimal>("DepositPercentage")
                         .HasColumnType("numeric");
 
@@ -721,17 +722,14 @@ namespace WeddingPlanner.Web.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<decimal>("OpeningBalancePaid")
+                        .HasColumnType("numeric");
+
                     b.Property<decimal>("PaymentAmount")
                         .HasColumnType("numeric");
 
-                    b.Property<int>("PaymentStatus")
-                        .HasColumnType("integer");
-
                     b.Property<int>("ServiceType")
                         .HasColumnType("integer");
-
-                    b.Property<decimal>("TotalPaid")
-                        .HasColumnType("numeric");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -788,6 +786,48 @@ namespace WeddingPlanner.Web.Data.Migrations
                     b.HasIndex("VendorId");
 
                     b.ToTable("VendorDocument");
+                });
+
+            modelBuilder.Entity("WeddingPlanner.Core.Domain.Entities.VendorPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("PaymentDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("PaymentMethod")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ReceiptUrl")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("VendorAssignmentId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VendorAssignmentId");
+
+                    b.ToTable("VendorPayments");
                 });
 
             modelBuilder.Entity("WeddingPlanner.Core.Domain.Entities.Wedding", b =>
@@ -1050,6 +1090,17 @@ namespace WeddingPlanner.Web.Data.Migrations
                     b.Navigation("VendorAssignment");
                 });
 
+            modelBuilder.Entity("WeddingPlanner.Core.Domain.Entities.VendorPayment", b =>
+                {
+                    b.HasOne("WeddingPlanner.Core.Domain.Entities.VendorAssignment", "VendorAssignment")
+                        .WithMany("Payments")
+                        .HasForeignKey("VendorAssignmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("VendorAssignment");
+                });
+
             modelBuilder.Entity("WeddingPlanner.Core.Domain.Entities.Wedding", b =>
                 {
                     b.HasOne("WeddingPlanner.Core.Domain.Entities.User", "Coordinator")
@@ -1172,6 +1223,8 @@ namespace WeddingPlanner.Web.Data.Migrations
             modelBuilder.Entity("WeddingPlanner.Core.Domain.Entities.VendorAssignment", b =>
                 {
                     b.Navigation("Contracts");
+
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("WeddingPlanner.Core.Domain.Entities.Wedding", b =>

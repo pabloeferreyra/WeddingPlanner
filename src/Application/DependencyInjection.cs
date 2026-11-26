@@ -9,6 +9,7 @@ using WeddingPlanner.Application.UseCases.TaskItems;
 using WeddingPlanner.Application.UseCases.Timelines;
 using WeddingPlanner.Application.UseCases.VendorAssignments;
 using WeddingPlanner.Application.UseCases.VendorDocuments;
+using WeddingPlanner.Application.UseCases.VendorPayments;
 using WeddingPlanner.Application.UseCases.Vendors;
 using WeddingPlanner.Application.UseCases.Weddings;
 
@@ -92,6 +93,12 @@ public static class DependencyInjection
         services.AddScoped<UpdateVendorAssignmentHandler>();
         services.AddScoped<DeleteVendorAssignmentHandler>();
         services.AddScoped<VendorAssignmentExistsHandler>();
+
+        services.AddScoped<GetVendorPaymentsByWeddingHandler>();
+        services.AddScoped<GetVendorPaymentByIdHandler>();
+        services.AddScoped<AddVendorPaymentHandler>();
+        services.AddScoped<UpdateVendorPaymentHandler>();
+        services.AddScoped<DeleteVendorPaymentHandler>();
 
         services.AddScoped<GetAllVendorDocumentsHandler>();
         services.AddScoped<GetVendorDocumentByIdHandler>();

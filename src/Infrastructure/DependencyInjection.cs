@@ -46,7 +46,9 @@ public static class DependencyInjection
         services.AddScoped<ITaskItemService, TaskItemService>();
         services.AddScoped<ITimelineService, TimelineService>();
         services.AddScoped<IVendorAssignmentService, VendorAssignmentService>();
+        services.AddScoped<IVendorPaymentService, VendorPaymentService>();
         services.AddScoped<IVendorDocumentService, VendorDocumentService>();
+        services.AddScoped<IVendorPaymentRepository, VendorPaymentRepository>();
         services.AddScoped<IWeddingRepository, WeddingRepository>();
         services.AddScoped<IGuestRepository, GuestRepository>();
         services.AddScoped<IGuestService, GuestService>();

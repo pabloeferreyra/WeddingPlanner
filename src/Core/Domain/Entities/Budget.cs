@@ -27,6 +27,6 @@ public class Budget
 
     // Methods
     public decimal GetRemainingBudget() => TotalAmount - CurrentSpent;
-    public decimal GetPercentageSpent() => (CurrentSpent / TotalAmount) * 100;
+    public decimal GetPercentageSpent() => TotalAmount <= 0 ? 0 : (CurrentSpent / TotalAmount) * 100;
     public bool IsOverBudget() => CurrentSpent > TotalAmount;
 }

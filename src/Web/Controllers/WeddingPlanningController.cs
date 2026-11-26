@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using WeddingPlanner.Application.UseCases.Budgets;
 using WeddingPlanner.Application.UseCases.ChecklistItems;
@@ -7,6 +8,7 @@ using WeddingPlanner.Application.UseCases.TaskItems;
 using WeddingPlanner.Application.UseCases.Timelines;
 using WeddingPlanner.Application.UseCases.VendorAssignments;
 using WeddingPlanner.Application.UseCases.VendorDocuments;
+using WeddingPlanner.Application.UseCases.VendorPayments;
 using WeddingPlanner.Application.UseCases.Vendors;
 using WeddingPlanner.Application.UseCases.Weddings;
 using WeddingPlanner.Core.Domain.Entities;
@@ -52,6 +54,11 @@ public sealed class WeddingPlanningController(
     AddVendorAssignmentHandler addVendorAssignment,
     UpdateVendorAssignmentHandler updateVendorAssignment,
     DeleteVendorAssignmentHandler deleteVendorAssignment,
+    GetVendorPaymentsByWeddingHandler getVendorPaymentsByWedding,
+    GetVendorPaymentByIdHandler getVendorPaymentById,
+    AddVendorPaymentHandler addVendorPayment,
+    UpdateVendorPaymentHandler updateVendorPayment,
+    DeleteVendorPaymentHandler deleteVendorPayment,
     GetAllVendorDocumentsHandler getAllVendorDocuments,
     GetAllVendorsHandler getAllVendors)
     : Controller
@@ -82,6 +89,8 @@ public sealed class WeddingPlanningController(
         var assignments = (await getAllVendorAssignments.HandleAsync())
             .Where(assignment => assignment.WeddingId == weddingId)
             .ToList();
+        var vendorPayments = await getVendorPaymentsByWedding.HandleAsync(
+            new GetVendorPaymentsByWeddingQuery(weddingId));
         var guests = await getGuestsByWedding.HandleAsync(
             new GetGuestsByWeddingQuery(weddingId),
             cancellationToken);
@@ -120,7 +129,8 @@ public sealed class WeddingPlanningController(
             ChecklistItems = checklists,
             Timelines = timelines,
             VendorAssignments = assignments,
-            Vendors = (await getAllVendors.HandleAsync()).ToList()
+            Vendors = (await getAllVendors.HandleAsync()).ToList(),
+            VendorPayments = vendorPayments
         });
     }
 
@@ -254,11 +264,23 @@ public sealed class WeddingPlanningController(
             return PartialView("Forms/_BudgetForm", model);
         }
 
-        await addBudget.HandleAsync(new AddBudgetCommand(new Budget
+        try
         {
-            WeddingId = weddingId,
-            TotalAmount = model.TotalAmount
-        }));
+            await addBudget.HandleAsync(new AddBudgetCommand(new Budget
+            {
+                WeddingId = weddingId,
+                TotalAmount = model.TotalAmount,
+                CategoryAllocations = model.CategoryAllocations
+                    .Where(allocation => allocation.Value.HasValue)
+                    .ToDictionary(allocation => allocation.Key, allocation => allocation.Value!.Value)
+            }));
+        }
+        catch (ValidationException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return PartialView("Forms/_BudgetForm", model);
+        }
+
         return RedirectToAction(nameof(Index), new { weddingId });
     }
 
@@ -280,7 +302,19 @@ public sealed class WeddingPlanningController(
         }
 
         budget.TotalAmount = model.TotalAmount;
-        await updateBudget.HandleAsync(new UpdateBudgetCommand(budget));
+        budget.CategoryAllocations = model.CategoryAllocations
+            .Where(allocation => allocation.Value.HasValue)
+            .ToDictionary(allocation => allocation.Key, allocation => allocation.Value!.Value);
+        try
+        {
+            await updateBudget.HandleAsync(new UpdateBudgetCommand(budget));
+        }
+        catch (ValidationException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return PartialView("Forms/_BudgetForm", model);
+        }
+
         return RedirectToAction(nameof(Index), new { weddingId });
     }
 
@@ -342,13 +376,21 @@ public sealed class WeddingPlanningController(
         model.Id = Guid.Empty;
         model.BudgetId = budget.Id;
         model.WeddingId = weddingId;
-        ValidateExpenseForm(model);
         if (!ModelState.IsValid)
         {
             return PartialView("Forms/_ExpenseForm", model);
         }
 
-        await addExpense.HandleAsync(new AddExpenseCommand(ToEntity(model)));
+        try
+        {
+            await addExpense.HandleAsync(new AddExpenseCommand(ToEntity(model)));
+        }
+        catch (ValidationException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return PartialView("Forms/_ExpenseForm", model);
+        }
+
         return RedirectToAction(nameof(Index), new { weddingId });
     }
 
@@ -372,14 +414,22 @@ public sealed class WeddingPlanningController(
         model.Id = id;
         model.BudgetId = budget.Id;
         model.WeddingId = weddingId;
-        ValidateExpenseForm(model);
         if (!ModelState.IsValid)
         {
             return PartialView("Forms/_ExpenseForm", model);
         }
 
         CopyToEntity(model, expense);
-        await updateExpense.HandleAsync(new UpdateExpenseCommand(expense));
+        try
+        {
+            await updateExpense.HandleAsync(new UpdateExpenseCommand(expense));
+        }
+        catch (ValidationException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return PartialView("Forms/_ExpenseForm", model);
+        }
+
         return RedirectToAction(nameof(Index), new { weddingId });
     }
 
@@ -723,7 +773,16 @@ public sealed class WeddingPlanningController(
             return await VendorAssignmentForm(model);
         }
 
-        await addVendorAssignment.HandleAsync(new AddVendorAssignmentCommand(ToEntity(model, vendor!)));
+        try
+        {
+            await addVendorAssignment.HandleAsync(new AddVendorAssignmentCommand(ToEntity(model, vendor!)));
+        }
+        catch (ValidationException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return await VendorAssignmentForm(model);
+        }
+
         return RedirectToAction(nameof(Index), new { weddingId });
     }
 
@@ -762,7 +821,16 @@ public sealed class WeddingPlanningController(
         }
 
         CopyToEntity(model, vendor!, assignment);
-        await updateVendorAssignment.HandleAsync(new UpdateVendorAssignmentCommand(assignment));
+        try
+        {
+            await updateVendorAssignment.HandleAsync(new UpdateVendorAssignmentCommand(assignment));
+        }
+        catch (ValidationException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return await VendorAssignmentForm(model);
+        }
+
         return RedirectToAction(nameof(Index), new { weddingId });
     }
 
@@ -777,6 +845,14 @@ public sealed class WeddingPlanningController(
             return NotFound();
         }
 
+        if ((await getVendorPaymentsByWedding.HandleAsync(
+                new GetVendorPaymentsByWeddingQuery(weddingId)))
+            .Any(payment => payment.VendorAssignmentId == id))
+        {
+            TempData["ModuleMessage"] = "Elimina primero las cuotas y pagos vinculados a esta contratación.";
+            return RedirectToAction(nameof(Index), new { weddingId });
+        }
+
         var hasDocuments = (await getAllVendorDocuments.HandleAsync())
             .Any(document => document.VendorAssignmentId == id);
         if (hasDocuments)
@@ -787,6 +863,129 @@ public sealed class WeddingPlanningController(
 
         await deleteVendorAssignment.HandleAsync(new DeleteVendorAssignmentCommand(id));
         return RedirectToAction(nameof(Index), new { weddingId });
+    }
+
+    [HttpGet("Vendors/{assignmentId:guid}/Payments/Create")]
+    public async Task<IActionResult> CreateVendorPayment(Guid weddingId, Guid assignmentId)
+    {
+        var assignment = await getVendorAssignmentById.HandleAsync(
+            new GetVendorAssignmentByIdQuery(assignmentId));
+        if (assignment is null || assignment.WeddingId != weddingId)
+        {
+            return NotFound();
+        }
+
+        return PartialView("Forms/_VendorPaymentForm", new VendorPaymentFormViewModel
+        {
+            WeddingId = weddingId,
+            VendorAssignmentId = assignmentId
+        });
+    }
+
+    [HttpGet("Vendors/{assignmentId:guid}/Payments/{id:guid}/Edit")]
+    public async Task<IActionResult> EditVendorPayment(Guid weddingId, Guid assignmentId, Guid id)
+    {
+        var payment = await getVendorPaymentById.HandleAsync(new GetVendorPaymentByIdQuery(id));
+        if (payment is null || payment.VendorAssignmentId != assignmentId
+            || !await AssignmentBelongsToWedding(assignmentId, weddingId))
+        {
+            return NotFound();
+        }
+
+        return PartialView("Forms/_VendorPaymentForm", ToFormModel(payment, weddingId));
+    }
+
+    [HttpPost("Vendors/{assignmentId:guid}/Payments/Create")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateVendorPayment(
+        Guid weddingId,
+        Guid assignmentId,
+        VendorPaymentFormViewModel model)
+    {
+        if (!await AssignmentBelongsToWedding(assignmentId, weddingId))
+        {
+            return NotFound();
+        }
+
+        model.Id = Guid.Empty;
+        model.WeddingId = weddingId;
+        model.VendorAssignmentId = assignmentId;
+        if (!ModelState.IsValid)
+        {
+            return PartialView("Forms/_VendorPaymentForm", model);
+        }
+
+        try
+        {
+            await addVendorPayment.HandleAsync(
+                new AddVendorPaymentCommand(ToEntity(model)));
+        }
+        catch (ValidationException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return PartialView("Forms/_VendorPaymentForm", model);
+        }
+
+        return RedirectToAction(nameof(Index), new { weddingId });
+    }
+
+    [HttpPost("Vendors/{assignmentId:guid}/Payments/{id:guid}/Edit")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditVendorPayment(
+        Guid weddingId,
+        Guid assignmentId,
+        Guid id,
+        VendorPaymentFormViewModel model)
+    {
+        var payment = await getVendorPaymentById.HandleAsync(new GetVendorPaymentByIdQuery(id));
+        if (payment is null || payment.VendorAssignmentId != assignmentId
+            || !await AssignmentBelongsToWedding(assignmentId, weddingId))
+        {
+            return NotFound();
+        }
+
+        model.Id = id;
+        model.WeddingId = weddingId;
+        model.VendorAssignmentId = assignmentId;
+        if (!ModelState.IsValid)
+        {
+            return PartialView("Forms/_VendorPaymentForm", model);
+        }
+
+        CopyToEntity(model, payment);
+        try
+        {
+            await updateVendorPayment.HandleAsync(new UpdateVendorPaymentCommand(payment));
+        }
+        catch (ValidationException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return PartialView("Forms/_VendorPaymentForm", model);
+        }
+
+        return RedirectToAction(nameof(Index), new { weddingId });
+    }
+
+    [HttpPost("Vendors/{assignmentId:guid}/Payments/{id:guid}/Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteVendorPayment(Guid weddingId, Guid assignmentId, Guid id)
+    {
+        var payment = await getVendorPaymentById.HandleAsync(new GetVendorPaymentByIdQuery(id));
+        if (payment is null || payment.VendorAssignmentId != assignmentId
+            || !await AssignmentBelongsToWedding(assignmentId, weddingId))
+        {
+            return NotFound();
+        }
+
+        await deleteVendorPayment.HandleAsync(new DeleteVendorPaymentCommand(id));
+        return RedirectToAction(nameof(Index), new { weddingId });
+    }
+
+    private async Task<bool> AssignmentBelongsToWedding(Guid assignmentId, Guid weddingId)
+    {
+        var assignment = await getVendorAssignmentById.HandleAsync(
+            new GetVendorAssignmentByIdQuery(assignmentId));
+        return assignment is not null && assignment.WeddingId == weddingId;
     }
 
     private async Task<bool> WeddingExists(Guid weddingId) =>
@@ -802,14 +1001,6 @@ public sealed class WeddingPlanningController(
     {
         ViewData["Vendors"] = await getAllVendors.HandleAsync();
         return PartialView("Forms/_VendorAssignmentForm", model);
-    }
-
-    private void ValidateExpenseForm(ExpenseFormViewModel model)
-    {
-        if (model.IsRecurring && model.RecurrenceType is null)
-        {
-            ModelState.AddModelError(nameof(model.RecurrenceType), "Selecciona la frecuencia del gasto recurrente.");
-        }
     }
 
     private static GuestFormViewModel ToFormModel(Guest guest) => new()
@@ -898,7 +1089,9 @@ public sealed class WeddingPlanningController(
     {
         Id = budget.Id,
         WeddingId = budget.WeddingId,
-        TotalAmount = budget.TotalAmount
+        TotalAmount = budget.TotalAmount,
+        CategoryAllocations = budget.CategoryAllocations
+            .ToDictionary(allocation => allocation.Key, allocation => (decimal?)allocation.Value)
     };
 
     private static ExpenseFormViewModel ToFormModel(Expense expense) => new()
@@ -910,6 +1103,7 @@ public sealed class WeddingPlanningController(
         Amount = expense.Amount,
         VendorName = expense.VendorName,
         ExpenseDate = expense.ExpenseDate,
+        DueDate = expense.DueDate,
         PaymentDate = expense.PaymentDate,
         IsRecurring = expense.IsRecurring,
         RecurrenceType = expense.RecurrenceType,
@@ -925,6 +1119,7 @@ public sealed class WeddingPlanningController(
         Amount = model.Amount,
         VendorName = model.VendorName,
         ExpenseDate = model.ExpenseDate,
+        DueDate = model.DueDate,
         PaymentDate = model.PaymentDate,
         IsRecurring = model.IsRecurring,
         RecurrenceType = model.IsRecurring ? model.RecurrenceType : null,
@@ -939,6 +1134,7 @@ public sealed class WeddingPlanningController(
         expense.Amount = model.Amount;
         expense.VendorName = model.VendorName;
         expense.ExpenseDate = model.ExpenseDate;
+        expense.DueDate = model.DueDate;
         expense.PaymentDate = model.PaymentDate;
         expense.IsRecurring = model.IsRecurring;
         expense.RecurrenceType = model.IsRecurring ? model.RecurrenceType : null;
@@ -1050,10 +1246,21 @@ public sealed class WeddingPlanningController(
         ContractEndDate = assignment.ContractEndDate,
         PaymentAmount = assignment.PaymentAmount,
         DepositPercentage = assignment.DepositPercentage,
-        DepositPaid = assignment.DepositPaid,
-        TotalPaid = assignment.TotalPaid,
-        PaymentStatus = assignment.PaymentStatus,
         Notes = assignment.Notes
+    };
+
+    private static VendorPaymentFormViewModel ToFormModel(VendorPayment payment, Guid weddingId) => new()
+    {
+        Id = payment.Id,
+        WeddingId = weddingId,
+        VendorAssignmentId = payment.VendorAssignmentId,
+        Amount = payment.Amount,
+        Type = payment.Type,
+        DueDate = payment.DueDate,
+        PaymentDate = payment.PaymentDate,
+        PaymentMethod = payment.PaymentMethod,
+        ReceiptUrl = payment.ReceiptUrl,
+        Notes = payment.Notes
     };
 
     private static VendorAssignment ToEntity(VendorAssignmentFormViewModel model, Vendor vendor) => new()
@@ -1065,9 +1272,18 @@ public sealed class WeddingPlanningController(
         ContractEndDate = model.ContractEndDate,
         PaymentAmount = model.PaymentAmount,
         DepositPercentage = model.DepositPercentage,
-        DepositPaid = model.DepositPaid,
-        TotalPaid = model.TotalPaid,
-        PaymentStatus = model.PaymentStatus,
+        Notes = model.Notes
+    };
+
+    private static VendorPayment ToEntity(VendorPaymentFormViewModel model) => new()
+    {
+        VendorAssignmentId = model.VendorAssignmentId,
+        Amount = model.Amount,
+        Type = model.Type,
+        DueDate = model.DueDate,
+        PaymentDate = model.PaymentDate,
+        PaymentMethod = model.PaymentMethod,
+        ReceiptUrl = model.ReceiptUrl,
         Notes = model.Notes
     };
 
@@ -1082,9 +1298,17 @@ public sealed class WeddingPlanningController(
         assignment.ContractEndDate = model.ContractEndDate;
         assignment.PaymentAmount = model.PaymentAmount;
         assignment.DepositPercentage = model.DepositPercentage;
-        assignment.DepositPaid = model.DepositPaid;
-        assignment.TotalPaid = model.TotalPaid;
-        assignment.PaymentStatus = model.PaymentStatus;
         assignment.Notes = model.Notes;
+    }
+
+    private static void CopyToEntity(VendorPaymentFormViewModel model, VendorPayment payment)
+    {
+        payment.Amount = model.Amount;
+        payment.Type = model.Type;
+        payment.DueDate = model.DueDate;
+        payment.PaymentDate = model.PaymentDate;
+        payment.PaymentMethod = model.PaymentMethod;
+        payment.ReceiptUrl = model.ReceiptUrl;
+        payment.Notes = model.Notes;
     }
 }
