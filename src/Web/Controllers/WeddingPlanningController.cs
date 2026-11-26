@@ -13,6 +13,7 @@ using WeddingPlanner.Application.UseCases.Vendors;
 using WeddingPlanner.Application.UseCases.Weddings;
 using WeddingPlanner.Core.Domain.Entities;
 using WeddingPlanner.Core.Domain.Enums;
+using WeddingPlanner.Core.Domain.Services;
 using WeddingPlanner.Web.Models;
 using TaskStatus = WeddingPlanner.Core.Domain.Enums.TaskStatus;
 
@@ -94,6 +95,7 @@ public sealed class WeddingPlanningController(
         var guests = await getGuestsByWedding.HandleAsync(
             new GetGuestsByWeddingQuery(weddingId),
             cancellationToken);
+        var attendance = GuestAttendanceCalculator.Calculate(guests);
         var timelines = (await getAllTimelines.HandleAsync())
             .Where(timeline => timeline.WeddingId == weddingId)
             .OrderBy(timeline => timeline.ScheduledDate)
@@ -119,6 +121,9 @@ public sealed class WeddingPlanningController(
             Wedding = wedding,
             Budget = budget,
             Guests = guests,
+            ConfirmedMainGuestCount = attendance.ConfirmedMainGuestCount,
+            ConfirmedCompanionCount = attendance.ConfirmedCompanionCount,
+            ConfirmedAttendeeCount = attendance.ConfirmedAttendeeCount,
             Expenses = budget is null
                 ? []
                 : (await getAllExpenses.HandleAsync())

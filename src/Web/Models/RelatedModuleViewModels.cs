@@ -18,15 +18,9 @@ public sealed class WeddingPlanningViewModel
     public IReadOnlyList<Vendor> Vendors { get; init; } = [];
     public IReadOnlyList<VendorPayment> VendorPayments { get; init; } = [];
 
-    public int ConfirmedMainGuestCount => Guests.Count(guest =>
-        guest.RSVPStatus == GuestStatus.Confirmed);
-
-    public int ConfirmedCompanionCount => Guests.Count(guest =>
-        guest.RSVPStatus != GuestStatus.Declined &&
-        guest.CanBringCompanion &&
-        guest.CompanionStatus == CompanionAttendanceStatus.Confirmed);
-
-    public int ConfirmedAttendeeCount => ConfirmedMainGuestCount + ConfirmedCompanionCount;
+    public int ConfirmedMainGuestCount { get; init; }
+    public int ConfirmedCompanionCount { get; init; }
+    public int ConfirmedAttendeeCount { get; init; }
 
     public IReadOnlyList<BudgetCategorySummary> BudgetCategorySummaries
     {

@@ -4,6 +4,7 @@ using WeddingPlanner.Application.Abstractions.Persistence;
 using WeddingPlanner.Application.Implementations;
 using WeddingPlanner.Core.Domain.Entities;
 using WeddingPlanner.Core.Domain.Enums;
+using WeddingPlanner.Core.Domain.Services;
 using WeddingPlanner.Web.Models;
 
 namespace WeddingPlanner.Tests.Unit;
@@ -28,28 +29,59 @@ public class GuestCompanionTests
             result.MemberNames.Contains(nameof(GuestFormViewModel.CanBringCompanion)));
     }
 
-    [Fact]
-    public void Confirmed_attendees_count_main_guests_and_permitted_companions_separately()
+    [Theory]
+    [InlineData(GuestStatus.Confirmed, CompanionAttendanceStatus.Confirmed, true, 1, 1, 2)]
+    [InlineData(GuestStatus.Confirmed, CompanionAttendanceStatus.Pending, true, 1, 0, 1)]
+    [InlineData(GuestStatus.Confirmed, CompanionAttendanceStatus.Declined, true, 1, 0, 1)]
+    [InlineData(GuestStatus.Pending, CompanionAttendanceStatus.Confirmed, true, 0, 0, 0)]
+    [InlineData(GuestStatus.Pending, CompanionAttendanceStatus.Pending, true, 0, 0, 0)]
+    [InlineData(GuestStatus.Pending, CompanionAttendanceStatus.Declined, true, 0, 0, 0)]
+    [InlineData(GuestStatus.Declined, CompanionAttendanceStatus.Confirmed, true, 0, 0, 0)]
+    [InlineData(GuestStatus.Declined, CompanionAttendanceStatus.Pending, true, 0, 0, 0)]
+    [InlineData(GuestStatus.Declined, CompanionAttendanceStatus.Declined, true, 0, 0, 0)]
+    [InlineData(GuestStatus.Confirmed, CompanionAttendanceStatus.Confirmed, false, 1, 0, 1)]
+    public void Attendance_requires_a_confirmed_guest_and_permitted_confirmed_companion(
+        GuestStatus guestStatus,
+        CompanionAttendanceStatus companionStatus,
+        bool canBringCompanion,
+        int mainGuests,
+        int companions,
+        int attendees)
     {
-        var viewModel = new WeddingPlanningViewModel
-        {
-            Wedding = new Wedding
-            {
-                Title = "Ana y Luis",
-                WeddingDate = new DateOnly(2027, 5, 1)
-            },
-            Guests =
-            [
-                CreateGuest(GuestStatus.Confirmed, canBringCompanion: true, CompanionAttendanceStatus.Confirmed),
-                CreateGuest(GuestStatus.Pending, canBringCompanion: true, CompanionAttendanceStatus.Pending),
-                CreateGuest(GuestStatus.Confirmed, canBringCompanion: false, CompanionAttendanceStatus.Confirmed),
-                CreateGuest(GuestStatus.Declined, canBringCompanion: true, CompanionAttendanceStatus.Confirmed)
-            ]
-        };
+        var result = GuestAttendanceCalculator.Calculate(
+            [CreateGuest(guestStatus, canBringCompanion, companionStatus)]);
 
-        Assert.Equal(2, viewModel.ConfirmedMainGuestCount);
-        Assert.Equal(1, viewModel.ConfirmedCompanionCount);
-        Assert.Equal(3, viewModel.ConfirmedAttendeeCount);
+        Assert.Equal(mainGuests, result.ConfirmedMainGuestCount);
+        Assert.Equal(companions, result.ConfirmedCompanionCount);
+        Assert.Equal(attendees, result.ConfirmedAttendeeCount);
+    }
+
+    [Fact]
+    public void Attendance_is_zero_for_an_empty_collection()
+    {
+        var result = GuestAttendanceCalculator.Calculate([]);
+
+        Assert.Equal(0, result.ConfirmedMainGuestCount);
+        Assert.Equal(0, result.ConfirmedCompanionCount);
+        Assert.Equal(0, result.ConfirmedAttendeeCount);
+    }
+
+    [Fact]
+    public void Attendance_sums_valid_confirmations_across_guests()
+    {
+        var result = GuestAttendanceCalculator.Calculate(
+        [
+            CreateGuest(GuestStatus.Confirmed, true, CompanionAttendanceStatus.Confirmed),
+            CreateGuest(GuestStatus.Confirmed, true, CompanionAttendanceStatus.Pending),
+            CreateGuest(GuestStatus.Confirmed, false, CompanionAttendanceStatus.Pending),
+            CreateGuest(GuestStatus.Pending, true, CompanionAttendanceStatus.Confirmed),
+            CreateGuest(GuestStatus.Declined, true, CompanionAttendanceStatus.Confirmed),
+            CreateGuest(GuestStatus.Confirmed, true, CompanionAttendanceStatus.Confirmed)
+        ]);
+
+        Assert.Equal(4, result.ConfirmedMainGuestCount);
+        Assert.Equal(2, result.ConfirmedCompanionCount);
+        Assert.Equal(6, result.ConfirmedAttendeeCount);
     }
 
     [Fact]
