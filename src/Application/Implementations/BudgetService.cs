@@ -9,16 +9,24 @@ public sealed class BudgetService (IBudgetRepository budgetRepository, IReposito
 {
     public async Task<Budget?> GetBudgetByWedding(Guid weddingId, CancellationToken cancellationToken = default)
     {
-        return await budgetRepository.GetBudgetByWedding(weddingId, cancellationToken);
+        var budget = await budgetRepository.GetBudgetByWedding(weddingId, cancellationToken);
+        if (budget is not null)
+        {
+            budget.CurrentSpent = await budgetRepository.GetTotalExpensesByBudget(budget.Id, cancellationToken);
+        }
+
+        return budget;
     }
     
     public async Task AddBudget(Budget budget)
     {
+        budget.CurrentSpent = await budgetRepository.GetTotalExpensesByBudget(budget.Id);
         await Repository.AddAsync(budget);
     }
     
     public async Task UpdateBudget(Budget budget)
     {
+        budget.CurrentSpent = await budgetRepository.GetTotalExpensesByBudget(budget.Id);
         await Repository.UpdateAsync(budget);
     }
     

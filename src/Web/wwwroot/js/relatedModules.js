@@ -9,8 +9,23 @@
                 recurringFields.hidden = !recurringToggle.checked;
             }
 
+            updateCompanionFields(form);
             updateAssignmentBalance(form);
         });
+    }
+
+    function updateCompanionFields(form) {
+        const toggle = form.querySelector('[data-companion-toggle]');
+        const fields = form.querySelector('[data-companion-fields]');
+        if (!toggle || !fields) return;
+
+        fields.hidden = !toggle.checked;
+        toggle.setAttribute('aria-expanded', String(toggle.checked));
+
+        if (!toggle.checked) {
+            const status = fields.querySelector('[data-companion-status]');
+            if (status) status.value = status.dataset.pendingValue;
+        }
     }
 
     function updateAssignmentBalance(form) {
@@ -50,10 +65,16 @@
 
     document.addEventListener('change', event => {
         const toggle = event.target;
-        if (!(toggle instanceof HTMLInputElement) || !toggle.matches('[data-recurring-toggle]')) return;
+        if (!(toggle instanceof HTMLInputElement)) return;
 
-        const fields = toggle.form?.querySelector('[data-recurring-fields]');
-        if (fields) fields.hidden = !toggle.checked;
+        if (toggle.matches('[data-recurring-toggle]')) {
+            const fields = toggle.form?.querySelector('[data-recurring-fields]');
+            if (fields) fields.hidden = !toggle.checked;
+        }
+
+        if (toggle.matches('[data-companion-toggle]') && toggle.form) {
+            updateCompanionFields(toggle.form);
+        }
     });
 
     document.addEventListener('input', event => {

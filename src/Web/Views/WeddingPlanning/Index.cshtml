@@ -5,7 +5,6 @@
 @{
     ViewData["Title"] = $"Organización - {Model.Wedding.Title}";
     var weddingId = Model.Wedding.Id;
-    var confirmedGuestCount = ViewData["ConfirmedGuestCount"] is int confirmed ? confirmed : 0;
     var completedTaskCount = ViewData["CompletedTaskCount"] is int completedTasks ? completedTasks : 0;
     var completedProgressItems = ViewData["CompletedProgressItems"] is int completedItems ? completedItems : 0;
     var totalProgressItems = ViewData["TotalProgressItems"] is int totalItems ? totalItems : 0;
@@ -69,10 +68,12 @@
                 <span class="planning-metric-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20m5.5-9a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-7.5a4 4 0 0 1 0 7.7m4.5 8.8v-1.5a4 4 0 0 0-3-3.87" /></svg>
                 </span>
-                <span class="planning-metric-label">Invitados confirmados</span>
+                <span class="planning-metric-label">Asistentes confirmados</span>
             </div>
-            <strong class="planning-metric-value">@confirmedGuestCount <small>/ @Model.Guests.Count</small></strong>
-            <span class="planning-metric-note">personas en la lista</span>
+            <strong class="planning-metric-value">@Model.ConfirmedAttendeeCount</strong>
+            <span class="planning-metric-note">
+                Invitados principales: @Model.ConfirmedMainGuestCount · Acompañantes: @Model.ConfirmedCompanionCount
+            </span>
         </article>
         <article class="planning-metric">
             <div class="planning-metric-topline">
@@ -153,8 +154,8 @@
                 </span>
                 <div>
                     <p class="eyebrow">Lista de asistentes</p>
-                    <h2 id="guests-heading">Invitados <span class="planning-count">@Model.Guests.Count</span></h2>
-                    <p>Organizá las confirmaciones, preferencias y mesas.</p>
+                    <h2 id="guests-heading">Invitados principales <span class="planning-count">@Model.Guests.Count</span></h2>
+                    <p>Organizá confirmaciones, acompañantes, preferencias y mesas.</p>
                 </div>
             </div>
             <button type="button" class="btn btn-primary"
@@ -165,11 +166,11 @@
         <div class="planning-table-wrap">
             <table class="table planning-table">
                 <caption class="visually-hidden">Invitados de @Model.Wedding.Title</caption>
-                <thead><tr><th scope="col">Nombre</th><th scope="col">Correo</th><th scope="col">Confirmación</th><th scope="col">Comida</th><th scope="col">Mesa</th><th scope="col">Etiquetas</th><th scope="col">Acciones</th></tr></thead>
+                <thead><tr><th scope="col">Nombre</th><th scope="col">Correo</th><th scope="col">Confirmación</th><th scope="col">Acompañante</th><th scope="col">Comida</th><th scope="col">Mesa</th><th scope="col">Etiquetas</th><th scope="col">Acciones</th></tr></thead>
                 <tbody>
                 @if (Model.Guests.Count == 0)
                 {
-                    <tr><td colspan="7"><div class="planning-empty-state">Todavía no hay invitados en la lista.</div></td></tr>
+                    <tr><td colspan="8"><div class="planning-empty-state">Todavía no hay invitados en la lista.</div></td></tr>
                 }
                 @foreach (var guest in Model.Guests)
                 {
@@ -179,10 +180,42 @@
                         GuestStatus.Declined => "No asiste",
                         _ => "Pendiente"
                     };
+                    var companionStatus = guest.CompanionStatus switch
+                    {
+                        CompanionAttendanceStatus.Confirmed => "Asistirá acompañado",
+                        CompanionAttendanceStatus.Declined => "No asistirá acompañado",
+                        _ => "Pendiente"
+                    };
                     <tr>
                         <td data-label="Nombre"><strong>@guest.FirstName @guest.LastName</strong></td>
                         <td data-label="Correo">@(guest.Email ?? "—")</td>
                         <td data-label="Confirmación"><span class="planning-badge planning-badge-@guest.RSVPStatus.ToString().ToLowerInvariant()">@guestStatus</span></td>
+                        <td data-label="Acompañante">
+                            @if (!guest.CanBringCompanion)
+                            {
+                                <span class="text-muted">No permitido</span>
+                            }
+                            else
+                            {
+                                <span class="planning-badge planning-badge-@guest.CompanionStatus.ToString().ToLowerInvariant()">@companionStatus</span>
+                                @if (!string.IsNullOrWhiteSpace(guest.CompanionName))
+                                {
+                                    <span class="d-block">@guest.CompanionName</span>
+                                }
+                                @if (guest.CompanionMealPreference.HasValue)
+                                {
+                                    <span class="d-block text-muted">Comida: @Html.DisplayFor(_ => guest.CompanionMealPreference)</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(guest.CompanionDietaryRestrictions))
+                                {
+                                    <span class="d-block text-muted">Restricciones: @guest.CompanionDietaryRestrictions</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(guest.CompanionNotes))
+                                {
+                                    <span class="d-block text-muted">Observaciones: @guest.CompanionNotes</span>
+                                }
+                            }
+                        </td>
                         <td data-label="Comida">@guest.MealPreference</td>
                         <td data-label="Mesa">@(guest.TableNumber?.ToString() ?? "—")</td>
                         <td data-label="Etiquetas">

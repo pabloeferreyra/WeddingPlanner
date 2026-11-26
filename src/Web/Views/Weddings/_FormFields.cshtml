@@ -18,11 +18,11 @@
         <span asp-validation-for="ExpectedGuestCount" class="text-danger"></span>
     </div>
     <div class="col-12 form-check ms-2">
-        <input asp-for="IsWedding" class="form-check-input"
-               onchange="var f=this.closest('form'),w=f.querySelector('.person-wedding'),c=f.querySelector('.person-celebrated');w.classList.toggle('d-none',!this.checked);w.disabled=!this.checked;c.classList.toggle('d-none',this.checked);c.disabled=this.checked;" />
+        <input asp-for="IsWedding" class="form-check-input" data-wedding-type-toggle />
         <label asp-for="IsWedding" class="form-check-label"></label>
     </div>
     <fieldset class="col-12 person-wedding @(Model.IsWedding ? "" : "d-none")" disabled="@(!Model.IsWedding)">
+        <legend class="visually-hidden">Datos de la pareja</legend>
         <div class="row g-3">
             <div class="col-md-4">
                 <label asp-for="BrideName" class="form-label"></label>
@@ -57,6 +57,7 @@
         </div>
     </fieldset>
     <fieldset class="col-12 person-celebrated @(Model.IsWedding ? "d-none" : "")" disabled="@Model.IsWedding">
+        <legend class="visually-hidden">Datos del festejado o festejada</legend>
         <div class="row g-3">
             <div class="col-md-4">
                 <label asp-for="CelebratedName" class="form-label"></label>

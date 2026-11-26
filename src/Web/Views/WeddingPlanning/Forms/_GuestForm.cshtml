@@ -42,6 +42,53 @@
             <label asp-for="RSVPStatus" class="form-label">Confirmación</label>
             <select asp-for="RSVPStatus" asp-items="Html.GetEnumSelectList<GuestStatus>()" class="form-select"></select>
         </div>
+        <div class="col-12 form-check">
+            <input asp-for="CanBringCompanion" class="form-check-input"
+                   data-companion-toggle
+                   aria-controls="companion-fields"
+                   aria-expanded="@Model.CanBringCompanion.ToString().ToLowerInvariant()" />
+            <label asp-for="CanBringCompanion" class="form-check-label">Puede asistir con acompañante</label>
+            <span asp-validation-for="CanBringCompanion" class="text-danger d-block"></span>
+        </div>
+        <fieldset id="companion-fields" class="col-12 p-0 border-0"
+                  data-companion-fields hidden="@(!Model.CanBringCompanion)">
+            <legend class="form-label">Datos del acompañante</legend>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="CompanionStatus" class="form-label">Confirmación del acompañante</label>
+                    <select asp-for="CompanionStatus"
+                            asp-items="Html.GetEnumSelectList<CompanionAttendanceStatus>()"
+                            class="form-select"
+                            data-companion-status
+                            data-pending-value="@((int)CompanionAttendanceStatus.Pending)"></select>
+                    <span asp-validation-for="CompanionStatus" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="CompanionName" class="form-label">Nombre del acompañante (opcional)</label>
+                    <input asp-for="CompanionName" class="form-control" />
+                    <span asp-validation-for="CompanionName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="CompanionMealPreference" class="form-label">Preferencia alimentaria</label>
+                    <select asp-for="CompanionMealPreference"
+                            asp-items="Html.GetEnumSelectList<MealPreference>()"
+                            class="form-select">
+                        <option value="">Sin especificar</option>
+                    </select>
+                    <span asp-validation-for="CompanionMealPreference" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="CompanionDietaryRestrictions" class="form-label">Restricciones alimentarias</label>
+                    <input asp-for="CompanionDietaryRestrictions" class="form-control" />
+                    <span asp-validation-for="CompanionDietaryRestrictions" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="CompanionNotes" class="form-label">Observaciones del acompañante</label>
+                    <textarea asp-for="CompanionNotes" class="form-control" rows="2"></textarea>
+                    <span asp-validation-for="CompanionNotes" class="text-danger"></span>
+                </div>
+            </div>
+        </fieldset>
         <div class="col-md-6">
             <label asp-for="MealPreference" class="form-label">Preferencia alimentaria</label>
             <select asp-for="MealPreference" asp-items="Html.GetEnumSelectList<MealPreference>()" class="form-select"></select>

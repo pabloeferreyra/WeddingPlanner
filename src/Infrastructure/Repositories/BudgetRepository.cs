@@ -22,4 +22,13 @@ ILogger<BudgetRepository> logger) : IBudgetRepository
 
         return budget;
     }
+
+    public async Task<decimal> GetTotalExpensesByBudget(Guid budgetId, CancellationToken cancellationToken = default)
+    {
+        var total = await context.Expenses
+            .Where(expense => expense.BudgetId == budgetId)
+            .SumAsync(expense => (decimal?)expense.Amount, cancellationToken);
+
+        return total ?? 0m;
+    }
 }

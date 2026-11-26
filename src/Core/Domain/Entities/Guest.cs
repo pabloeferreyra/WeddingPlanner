@@ -28,6 +28,21 @@ public class Guest
 
     public MealPreference MealPreference { get; set; } = MealPreference.Regular;
 
+    public bool CanBringCompanion { get; set; }
+
+    public CompanionAttendanceStatus CompanionStatus { get; set; } = CompanionAttendanceStatus.Pending;
+
+    [StringLength(100)]
+    public string? CompanionName { get; set; }
+
+    public MealPreference? CompanionMealPreference { get; set; }
+
+    [StringLength(500)]
+    public string? CompanionDietaryRestrictions { get; set; }
+
+    [StringLength(500)]
+    public string? CompanionNotes { get; set; }
+
     public int? TableNumber { get; set; }
 
     [StringLength(500)]

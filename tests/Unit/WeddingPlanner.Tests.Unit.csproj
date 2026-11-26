@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\Core\WeddingPlanner.Core.csproj" />
     <ProjectReference Include="..\..\src\Application\WeddingPlanner.Application.csproj" />
     <ProjectReference Include="..\..\src\Infrastructure\WeddingPlanner.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Web\WeddingPlanner.Web.csproj" />
   </ItemGroup>
 
 </Project>

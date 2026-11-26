@@ -3,7 +3,7 @@
 <div class="celebrations-table-heading">
     <div>
         <h2>Celebraciones</h2>
-        <p id="weddingsResultCount">Mostrando celebraciones</p>
+        <p id="weddingsResultCount" role="status" aria-live="polite" aria-atomic="true">Cargando celebraciones...</p>
     </div>
     <button id="weddingSortButton" class="table-sort-button" type="button" aria-label="Ordenar por fecha">
         <span>Ordenar por fecha</span>
@@ -15,7 +15,7 @@
      tabindex="0"
      role="region"
      aria-labelledby="weddingsTableCaption">
-    <table id="weddingsTable" class="table align-middle mb-0">
+    <table id="weddingsTable" class="table align-middle mb-0" aria-busy="true">
         <caption id="weddingsTableCaption" class="visually-hidden">Listado de celebraciones</caption>
         <thead>
             <tr>

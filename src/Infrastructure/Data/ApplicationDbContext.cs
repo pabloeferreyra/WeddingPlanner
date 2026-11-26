@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using WeddingPlanner.Core.Domain.Entities;
+using WeddingPlanner.Core.Domain.Enums;
 
 namespace WeddingPlanner.Infrastructure.Data;
 
@@ -30,6 +31,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Guest>()
+            .Property(guest => guest.CompanionStatus)
+            .HasDefaultValue(CompanionAttendanceStatus.Pending);
 
         modelBuilder.Entity<Budget>()
             .Property(budget => budget.CategoryAllocations)

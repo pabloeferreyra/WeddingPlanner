@@ -1,8 +1,8 @@
 (() => {
     'use strict';
     const key = "weddings";
-    let reloadWeddings = null;
     let searchTimer = null;
+    let loadController = null;
     let dateFilter = "";
     let statusFilter = "";
 
@@ -12,22 +12,23 @@
             defaultPageSize: 25,
             pageSizeSelector: "#pageSize",
             defaultOrder: { column: 0, dir: 'asc' },
-            onChange: AppUtils.Pagination.init
+            onChange: loadData
         });
-
-        AppUtils.Sort.attachHeaderSorting("#weddingsTable", key, loadData);
 
         document.addEventListener("submit", submitWeddingForm);
         document.addEventListener("click", deleteWedding);
+        document.addEventListener("change", toggleWeddingFields);
         bindFilters();
 
         loadData();
-        reloadWeddings = loadData;
 
         document.dispatchEvent(new Event("weddings:loaded"));
     });
 
     async function loadData() {
+        loadController?.abort();
+        const controller = new AbortController();
+        loadController = controller;
 
         const st = AppUtils.Pagination.getState(key);
         const order = AppUtils.Pagination.getOrder(key);
@@ -52,29 +53,63 @@
         const columnsMap = ['Title', 'WeddingDate', 'Status'];
         columnsMap.forEach((name, i) => form.append(`columns[${i}][name]`, name));
 
+        const table = document.querySelector("#weddingsTable");
+        table?.setAttribute("aria-busy", "true");
+        const resultCount = document.querySelector("#weddingsResultCount");
+        if (resultCount) resultCount.textContent = "Cargando celebraciones...";
+        const tbody = table?.querySelector("tbody");
+        if (tbody && !tbody.children.length) {
+            tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state" role="status">Cargando celebraciones...</div></td></tr>';
+        }
+
         try {
             const res = await fetch("/Weddings/InitializeTable", {
                 method: "POST",
-                body: form
+                body: form,
+                signal: controller.signal
             });
+            if (!res.ok) throw new Error(`Error del servidor (${res.status}).`);
 
             const json = await res.json();
-            const data = json?.data || [];
-            const total = json?.recordsTotal || json?.recordsFiltered || data.length;
-            const filtered = json?.recordsFiltered ?? total;
+            const recordsTotal = Number(json?.recordsTotal);
+            const filtered = Number(json?.recordsFiltered);
+            if (!Array.isArray(json?.data) ||
+                !Number.isInteger(recordsTotal) || recordsTotal < 0 ||
+                !Number.isInteger(filtered) || filtered < 0 ||
+                !json.summary) {
+                throw new Error("El servidor devolvió datos inesperados.");
+            }
+            if (controller !== loadController) return;
 
             AppUtils.Pagination.setRecordsTotal(key, filtered);
             updateSummary(json?.summary, filtered);
-            renderTable(data);
+            renderTable(json.data);
             AppUtils.Pagination.renderWithState("#weddingPagination", key, loadData);
             updatePaginationSummary(filtered);
 
         } catch (err) {
+            if (err instanceof Error && err.name === "AbortError") return;
+            if (controller !== loadController) return;
+
             console.error("Error cargando celebraciones:", err);
-            const tbody = document.querySelector("#weddingsTable tbody");
-            if (tbody) {
-                tbody.innerHTML =
-                    '<tr><td colspan="3" class="text-danger text-center">Error cargando celebraciones.</td></tr>';
+            if (resultCount) resultCount.textContent = "No se pudieron cargar las celebraciones.";
+            const currentTbody = table?.querySelector("tbody");
+            if (currentTbody) {
+                currentTbody.innerHTML =
+                    '<tr><td colspan="3"><div class="empty-state" role="alert">' +
+                    '<h3>No se pudieron cargar las celebraciones</h3>' +
+                    '<p>Revisa tu conexión e inténtalo nuevamente.</p>' +
+                    '<button type="button" class="btn btn-primary mt-3" data-retry-weddings>Reintentar</button>' +
+                    '</div></td></tr>';
+                currentTbody.querySelector("[data-retry-weddings]")?.addEventListener("click", loadData);
+            }
+            document.querySelector("#weddingPagination")?.replaceChildren();
+            const paginationSummary = document.querySelector("#weddingPaginationSummary");
+            if (paginationSummary) paginationSummary.textContent = "Resultados no disponibles.";
+        } finally {
+            if (controller === loadController) {
+                loadController = null;
+                table?.setAttribute("aria-busy", "false");
             }
         }
     }
@@ -86,14 +121,30 @@
         tbody.innerHTML = "";
 
         if (!rows.length) {
-            tbody.innerHTML = '<tr><td colspan="3">' +
-                '<div class="empty-state">' +
-                '<h3>Aún no hay celebraciones</h3>' +
-                '<p>Crea una celebración para empezar a organizarla.</p>' +
-                '<button class="btn btn-primary mt-3" data-open-modal ' +
-                'data-modal-id="GlobalModal" data-url="/Weddings/Create" ' +
-                'data-title="Nueva celebración" type="button">Crear primer evento</button>' +
-                '</div></td></tr>';
+            const hasFilters = Boolean(
+                document.querySelector("#weddingSearch")?.value.trim() ||
+                statusFilter ||
+                dateFilter
+            );
+            const title = hasFilters ? "No encontramos celebraciones" : "Aún no hay celebraciones";
+            const description = hasFilters
+                ? "Prueba a cambiar o quitar los filtros."
+                : "Crea una celebración para empezar a organizarla.";
+            const button = hasFilters
+                ? '<button type="button" class="btn btn-outline-secondary mt-3" data-clear-wedding-filters>Quitar filtros</button>'
+                : '<button class="btn btn-primary mt-3" data-open-modal data-modal-id="GlobalModal" data-url="/Weddings/Create" data-title="Nueva celebración" type="button">Crear primer evento</button>';
+            tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><h3>${title}</h3><p>${description}</p>${button}</div></td></tr>`;
+            tbody.querySelector("[data-clear-wedding-filters]")?.addEventListener("click", () => {
+                statusFilter = "";
+                dateFilter = "";
+                const search = document.querySelector("#weddingSearch");
+                if (search) search.value = "";
+                document.querySelector("#weddingDateFilterLabel").textContent = "Fecha";
+                document.querySelector("#weddingStatusFilterLabel").textContent = "Estado";
+                const state = AppUtils.Pagination.getState(key);
+                if (state) state.currentPage = 1;
+                loadData();
+            });
             return;
         }
 
@@ -176,11 +227,17 @@
 
     function updateSummary(summary, filtered) {
         if (!summary) return;
-        document.querySelector("#weddingsTotalMetric").textContent = summary.total;
-        document.querySelector("#weddingsUpcomingMetric").textContent = summary.upcoming;
-        document.querySelector("#weddingsCompletedMetric").textContent = summary.completed;
-        document.querySelector("#weddingsResultCount").textContent =
-            `Mostrando ${filtered} celebración${filtered === 1 ? "" : "es"}`;
+        const total = document.querySelector("#weddingsTotalMetric");
+        const upcoming = document.querySelector("#weddingsUpcomingMetric");
+        const completed = document.querySelector("#weddingsCompletedMetric");
+        const resultCount = document.querySelector("#weddingsResultCount");
+        if (total) total.textContent = summary.total;
+        if (upcoming) upcoming.textContent = summary.upcoming;
+        if (completed) completed.textContent = summary.completed;
+        if (resultCount) {
+            resultCount.textContent =
+                `Mostrando ${filtered} celebración${filtered === 1 ? "" : "es"}`;
+        }
     }
 
     function updatePaginationSummary(filtered) {
@@ -188,8 +245,10 @@
         if (!st) return;
         const start = filtered === 0 ? 0 : (st.currentPage - 1) * st.pageSize + 1;
         const end = Math.min(st.currentPage * st.pageSize, filtered);
-        document.querySelector("#weddingPaginationSummary").textContent =
-            `${start}-${end} de ${filtered} resultados`;
+        const paginationSummary = document.querySelector("#weddingPaginationSummary");
+        if (paginationSummary) {
+            paginationSummary.textContent = `${start}-${end} de ${filtered} resultados`;
+        }
     }
 
     function bindFilters() {
@@ -276,6 +335,21 @@
         });
     }
 
+    function toggleWeddingFields(event) {
+        const toggle = event.target;
+        if (!(toggle instanceof HTMLInputElement) || !toggle.matches("[data-wedding-type-toggle]")) return;
+
+        const form = toggle.closest("form");
+        const weddingFields = form?.querySelector(".person-wedding");
+        const celebratedFields = form?.querySelector(".person-celebrated");
+        if (!weddingFields || !celebratedFields) return;
+
+        weddingFields.classList.toggle("d-none", !toggle.checked);
+        weddingFields.disabled = !toggle.checked;
+        celebratedFields.classList.toggle("d-none", toggle.checked);
+        celebratedFields.disabled = toggle.checked;
+    }
+
     function escapeHTML(t) {
         const div = document.createElement("div");
         div.textContent = t ?? "";
@@ -292,8 +366,16 @@
         if (!(form instanceof HTMLFormElement) || !form.closest("#GlobalModal-body")) return;
 
         event.preventDefault();
+        if (form.dataset.submitting === "true") return;
+        form.dataset.submitting = "true";
+
         const submitButton = event.submitter;
-        if (submitButton) submitButton.disabled = true;
+        const originalButtonText = submitButton?.textContent;
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.setAttribute("aria-busy", "true");
+            submitButton.textContent = "Guardando...";
+        }
 
         try {
             const response = await fetch(form.action, {
@@ -302,18 +384,45 @@
             });
 
             if (response.redirected) {
-                window.location.assign(response.url);
+                const redirectUrl = new URL(response.url);
+                if (redirectUrl.origin === window.location.origin &&
+                    redirectUrl.pathname.startsWith("/Weddings/")) {
+                    window.ModalUtils.close("GlobalModal");
+                    await loadData();
+                    AppUtils.showToast("success", "Celebración guardada");
+                } else {
+                    window.location.assign(response.url);
+                }
                 return;
             }
 
             const html = await response.text();
             if (!response.ok) throw new Error(`No se pudo guardar la celebración (${response.status}).`);
-            document.querySelector("#GlobalModal-body").innerHTML = html;
+            const modalBody = document.querySelector("#GlobalModal-body");
+            if (!modalBody) throw new Error("No se encontró el formulario de celebración.");
+            modalBody.innerHTML = html;
+
+            const invalidField = modalBody.querySelector(
+                'input.input-validation-error, select.input-validation-error, textarea.input-validation-error, ' +
+                'input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"]'
+            );
+            const errorSummary = modalBody.querySelector(".validation-summary-errors");
+            const focusTarget = invalidField || errorSummary;
+            if (focusTarget instanceof HTMLElement) {
+                if (focusTarget === errorSummary) focusTarget.tabIndex = -1;
+                focusTarget.focus({ preventScroll: true });
+                focusTarget.scrollIntoView({ block: "nearest" });
+            }
         } catch (error) {
             console.error("Error guardando la celebración:", error);
             AppUtils.showToast("error", error.message);
         } finally {
-            if (submitButton?.isConnected) submitButton.disabled = false;
+            if (form.isConnected) form.dataset.submitting = "false";
+            if (submitButton?.isConnected) {
+                submitButton.disabled = false;
+                submitButton.removeAttribute("aria-busy");
+                if (originalButtonText !== null) submitButton.textContent = originalButtonText;
+            }
         }
     }
 

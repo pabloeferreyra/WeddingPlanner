@@ -16,9 +16,17 @@ public sealed class WeddingPlanningViewModel
     public IReadOnlyList<Timeline> Timelines { get; init; } = [];
     public IReadOnlyList<VendorAssignment> VendorAssignments { get; init; } = [];
     public IReadOnlyList<Vendor> Vendors { get; init; } = [];
+
+    public int ConfirmedMainGuestCount => Guests.Count(guest =>
+        guest.RSVPStatus == GuestStatus.Confirmed);
+
+    public int ConfirmedCompanionCount => Guests.Count(guest =>
+        guest.CanBringCompanion && guest.CompanionStatus == CompanionAttendanceStatus.Confirmed);
+
+    public int ConfirmedAttendeeCount => ConfirmedMainGuestCount + ConfirmedCompanionCount;
 }
 
-public sealed class GuestFormViewModel
+public sealed class GuestFormViewModel : IValidatableObject
 {
     public Guid Id { get; set; }
     public Guid WeddingId { get; set; }
@@ -38,6 +46,23 @@ public sealed class GuestFormViewModel
     [EnumDataType(typeof(GuestStatus))]
     public GuestStatus RSVPStatus { get; set; } = GuestStatus.Pending;
 
+    public bool CanBringCompanion { get; set; }
+
+    [EnumDataType(typeof(CompanionAttendanceStatus))]
+    public CompanionAttendanceStatus CompanionStatus { get; set; } = CompanionAttendanceStatus.Pending;
+
+    [StringLength(100)]
+    public string? CompanionName { get; set; }
+
+    [EnumDataType(typeof(MealPreference))]
+    public MealPreference? CompanionMealPreference { get; set; }
+
+    [StringLength(500)]
+    public string? CompanionDietaryRestrictions { get; set; }
+
+    [StringLength(500)]
+    public string? CompanionNotes { get; set; }
+
     [EnumDataType(typeof(MealPreference))]
     public MealPreference MealPreference { get; set; } = MealPreference.Regular;
 
@@ -49,6 +74,16 @@ public sealed class GuestFormViewModel
 
     public bool IsFamily { get; set; }
     public bool IsVIP { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (!CanBringCompanion && CompanionStatus == CompanionAttendanceStatus.Confirmed)
+        {
+            yield return new ValidationResult(
+                "No se puede confirmar un acompañante si el invitado no tiene permiso para llevarlo.",
+                [nameof(CanBringCompanion)]);
+        }
+    }
 }
 
 public sealed class BudgetFormViewModel
@@ -58,9 +93,6 @@ public sealed class BudgetFormViewModel
 
     [Range(0.01, double.MaxValue)]
     public decimal TotalAmount { get; set; }
-
-    [Range(0, double.MaxValue)]
-    public decimal CurrentSpent { get; set; }
 }
 
 public sealed class ExpenseFormViewModel

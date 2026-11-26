@@ -97,8 +97,6 @@ public sealed class WeddingPlanningController(
         var totalProgressItems = tasks.Count + checklists.Count + timelines.Count;
 
         ViewData["BudgetRemaining"] = budget?.GetRemainingBudget();
-        ViewData["ConfirmedGuestCount"] = guests.Count(guest =>
-            guest.RSVPStatus == GuestStatus.Confirmed);
         ViewData["CompletedTaskCount"] = tasks.Count(task =>
             task.Status == TaskStatus.Completed);
         ViewData["CompletedProgressItems"] = completedProgressItems;
@@ -259,8 +257,7 @@ public sealed class WeddingPlanningController(
         await addBudget.HandleAsync(new AddBudgetCommand(new Budget
         {
             WeddingId = weddingId,
-            TotalAmount = model.TotalAmount,
-            CurrentSpent = model.CurrentSpent
+            TotalAmount = model.TotalAmount
         }));
         return RedirectToAction(nameof(Index), new { weddingId });
     }
@@ -283,7 +280,6 @@ public sealed class WeddingPlanningController(
         }
 
         budget.TotalAmount = model.TotalAmount;
-        budget.CurrentSpent = model.CurrentSpent;
         await updateBudget.HandleAsync(new UpdateBudgetCommand(budget));
         return RedirectToAction(nameof(Index), new { weddingId });
     }
@@ -826,6 +822,12 @@ public sealed class WeddingPlanningController(
         PhoneAreaCode = guest.Phone?.AreaCode,
         PhoneNumber = guest.Phone?.Number,
         RSVPStatus = guest.RSVPStatus,
+        CanBringCompanion = guest.CanBringCompanion,
+        CompanionStatus = guest.CompanionStatus,
+        CompanionName = guest.CompanionName,
+        CompanionMealPreference = guest.CompanionMealPreference,
+        CompanionDietaryRestrictions = guest.CompanionDietaryRestrictions,
+        CompanionNotes = guest.CompanionNotes,
         MealPreference = guest.MealPreference,
         TableNumber = guest.TableNumber,
         Notes = guest.Notes,
@@ -833,23 +835,28 @@ public sealed class WeddingPlanningController(
         IsVIP = guest.IsVIP
     };
 
-    private static Guest ToEntity(GuestFormViewModel model, Wedding wedding) => new()
+    private static Guest ToEntity(GuestFormViewModel model, Wedding wedding)
     {
-        WeddingId = model.WeddingId,
-        Wedding = wedding,
-        FirstName = model.FirstName,
-        LastName = model.LastName,
-        Email = model.Email,
-        Phone = model.PhoneAreaCode is null && model.PhoneNumber is null
-            ? null
-            : new PhoneNumber { AreaCode = model.PhoneAreaCode, Number = model.PhoneNumber },
-        RSVPStatus = model.RSVPStatus,
-        MealPreference = model.MealPreference,
-        TableNumber = model.TableNumber,
-        Notes = model.Notes ?? string.Empty,
-        IsFamily = model.IsFamily,
-        IsVIP = model.IsVIP
-    };
+        var guest = new Guest
+        {
+            WeddingId = model.WeddingId,
+            Wedding = wedding,
+            FirstName = model.FirstName,
+            LastName = model.LastName,
+            Email = model.Email,
+            Phone = model.PhoneAreaCode is null && model.PhoneNumber is null
+                ? null
+                : new PhoneNumber { AreaCode = model.PhoneAreaCode, Number = model.PhoneNumber },
+            RSVPStatus = model.RSVPStatus,
+            MealPreference = model.MealPreference,
+            TableNumber = model.TableNumber,
+            Notes = model.Notes ?? string.Empty,
+            IsFamily = model.IsFamily,
+            IsVIP = model.IsVIP
+        };
+        CopyCompanionToEntity(model, guest);
+        return guest;
+    }
 
     private static void CopyToEntity(GuestFormViewModel model, Guest guest)
     {
@@ -872,14 +879,26 @@ public sealed class WeddingPlanningController(
         guest.Notes = model.Notes ?? string.Empty;
         guest.IsFamily = model.IsFamily;
         guest.IsVIP = model.IsVIP;
+        CopyCompanionToEntity(model, guest);
+    }
+
+    private static void CopyCompanionToEntity(GuestFormViewModel model, Guest guest)
+    {
+        guest.CanBringCompanion = model.CanBringCompanion;
+        guest.CompanionStatus = model.CanBringCompanion
+            ? model.CompanionStatus
+            : CompanionAttendanceStatus.Pending;
+        guest.CompanionName = model.CanBringCompanion ? model.CompanionName : null;
+        guest.CompanionMealPreference = model.CanBringCompanion ? model.CompanionMealPreference : null;
+        guest.CompanionDietaryRestrictions = model.CanBringCompanion ? model.CompanionDietaryRestrictions : null;
+        guest.CompanionNotes = model.CanBringCompanion ? model.CompanionNotes : null;
     }
 
     private static BudgetFormViewModel ToFormModel(Budget budget) => new()
     {
         Id = budget.Id,
         WeddingId = budget.WeddingId,
-        TotalAmount = budget.TotalAmount,
-        CurrentSpent = budget.CurrentSpent
+        TotalAmount = budget.TotalAmount
     };
 
     private static ExpenseFormViewModel ToFormModel(Expense expense) => new()
