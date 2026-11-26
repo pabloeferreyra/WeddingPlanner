@@ -9,11 +9,11 @@
       asp-action="@(isEdit ? "EditTimeline" : "CreateTimeline")"
       asp-route-weddingId="@Model.WeddingId"
       asp-route-id="@Model.Id"
-      method="post">
+      method="post" class="planning-form" aria-label="Formulario de actividad del cronograma">
     @Html.AntiForgeryToken()
     <input asp-for="Id" type="hidden" />
     <input asp-for="WeddingId" type="hidden" />
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+    <div asp-validation-summary="ModelOnly" class="planning-form-summary text-danger mb-3" role="alert"></div>
     <div class="row g-3">
         <div class="col-md-8">
             <label asp-for="EventName" class="form-label">Actividad</label>

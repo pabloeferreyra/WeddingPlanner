@@ -126,7 +126,6 @@ public sealed class VendorDocumentsController(
         document.DocumentName = model.DocumentName;
         document.DocumentType = model.DocumentType;
         document.FileUrl = model.FileUrl;
-        document.FileSizeBytes = model.FileSizeBytes;
         document.ExpiryDate = model.ExpiryDate;
         await updateDocument.HandleAsync(new UpdateVendorDocumentCommand(document));
         return RedirectToAction(nameof(Index), new { vendorId });
@@ -183,7 +182,6 @@ public sealed class VendorDocumentsController(
         DocumentName = document.DocumentName ?? string.Empty,
         DocumentType = document.DocumentType,
         FileUrl = document.FileUrl ?? string.Empty,
-        FileSizeBytes = document.FileSizeBytes,
         ExpiryDate = document.ExpiryDate
     };
 
@@ -194,7 +192,6 @@ public sealed class VendorDocumentsController(
         DocumentName = model.DocumentName,
         DocumentType = model.DocumentType,
         FileUrl = model.FileUrl,
-        FileSizeBytes = model.FileSizeBytes,
         ExpiryDate = model.ExpiryDate
     };
 }

@@ -518,7 +518,6 @@ namespace WeddingPlanner.Web.Data.Migrations
                     DocumentName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     DocumentType = table.Column<int>(type: "integer", nullable: false),
                     FileUrl = table.Column<string>(type: "text", nullable: false),
-                    FileSizeBytes = table.Column<long>(type: "bigint", nullable: false),
                     UploadedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },

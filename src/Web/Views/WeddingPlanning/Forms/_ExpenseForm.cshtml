@@ -9,12 +9,12 @@
       asp-action="@(isEdit ? "EditExpense" : "CreateExpense")"
       asp-route-weddingId="@Model.WeddingId"
       asp-route-id="@Model.Id"
-      method="post">
+      method="post" class="planning-form" aria-label="Formulario de gasto">
     @Html.AntiForgeryToken()
     <input asp-for="Id" type="hidden" />
     <input asp-for="WeddingId" type="hidden" />
     <input asp-for="BudgetId" type="hidden" />
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+    <div asp-validation-summary="ModelOnly" class="planning-form-summary text-danger mb-3" role="alert"></div>
     <div class="row g-3">
         <div class="col-md-6">
             <label asp-for="Description" class="form-label">Descripción</label>
@@ -43,10 +43,10 @@
             <input asp-for="PaymentDate" type="date" class="form-control" />
         </div>
         <div class="col-12 form-check ms-2">
-            <input asp-for="IsRecurring" class="form-check-input" />
+            <input asp-for="IsRecurring" class="form-check-input" data-recurring-toggle />
             <label asp-for="IsRecurring" class="form-check-label">Gasto recurrente</label>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-6" data-recurring-fields hidden="@(!Model.IsRecurring)">
             <label asp-for="RecurrenceType" class="form-label">Frecuencia</label>
             <select asp-for="RecurrenceType" asp-items="Html.GetEnumSelectList<RecurrenceType>()" class="form-select">
                 <option value="">No recurrente</option>

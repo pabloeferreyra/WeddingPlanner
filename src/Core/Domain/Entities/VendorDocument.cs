@@ -22,7 +22,6 @@ public class VendorDocument
     [Required]
     public string? FileUrl { get; set; }
 
-    public long FileSizeBytes { get; set; }
 
     public DateTime UploadedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
     public DateTime? ExpiryDate { get; set; }

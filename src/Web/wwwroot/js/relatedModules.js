@@ -1,6 +1,67 @@
 (() => {
     'use strict';
 
+    function updateFormEnhancements(container) {
+        container.querySelectorAll('form.planning-form').forEach(form => {
+            const recurringToggle = form.querySelector('[data-recurring-toggle]');
+            const recurringFields = form.querySelector('[data-recurring-fields]');
+            if (recurringToggle && recurringFields) {
+                recurringFields.hidden = !recurringToggle.checked;
+            }
+
+            updateAssignmentBalance(form);
+        });
+    }
+
+    function updateAssignmentBalance(form) {
+        const output = form.querySelector('[data-assignment-balance]');
+        const amountField = form.querySelector('[name="PaymentAmount"]');
+        const paidField = form.querySelector('[name="TotalPaid"]');
+        if (!output || !amountField || !paidField) return;
+
+        const amount = Number(amountField.value);
+        const paid = Number(paidField.value);
+        if (!Number.isFinite(amount) || !Number.isFinite(paid)) {
+            output.textContent = '—';
+            return;
+        }
+
+        output.textContent = new Intl.NumberFormat(output.dataset.numberCulture || undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount - paid);
+    }
+
+    function associateValidationErrors(container) {
+        const fields = Array.from(container.querySelectorAll('input, select, textarea'));
+        container.querySelectorAll('[data-valmsg-for]').forEach(error => {
+            if (!error.id || !error.textContent.trim()) return;
+
+            const fieldName = error.getAttribute('data-valmsg-for');
+            const field = fields.find(candidate => candidate.name === fieldName);
+            if (!field) return;
+
+            field.setAttribute('aria-invalid', 'true');
+            const describedBy = new Set((field.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean));
+            describedBy.add(error.id);
+            field.setAttribute('aria-describedby', Array.from(describedBy).join(' '));
+        });
+    }
+
+    document.addEventListener('change', event => {
+        const toggle = event.target;
+        if (!(toggle instanceof HTMLInputElement) || !toggle.matches('[data-recurring-toggle]')) return;
+
+        const fields = toggle.form?.querySelector('[data-recurring-fields]');
+        if (fields) fields.hidden = !toggle.checked;
+    });
+
+    document.addEventListener('input', event => {
+        const field = event.target;
+        if (!(field instanceof HTMLInputElement) || !['PaymentAmount', 'TotalPaid'].includes(field.name)) return;
+        if (field.form) updateAssignmentBalance(field.form);
+    });
+
     document.addEventListener('submit', async event => {
         const form = event.target;
         if (!(form instanceof HTMLFormElement) || !form.closest('#GlobalModal-body')) return;
@@ -20,10 +81,29 @@
             }
             if (!response.ok) throw new Error(`No se pudo guardar la información (${response.status}).`);
 
-            document.querySelector('#GlobalModal-body').innerHTML = await response.text();
+            const modalBody = form.closest('#GlobalModal-body');
+            modalBody.innerHTML = await response.text();
+            updateFormEnhancements(modalBody);
+            associateValidationErrors(modalBody);
+
+            const invalidField = modalBody.querySelector(
+                'input.input-validation-error, select.input-validation-error, textarea.input-validation-error, ' +
+                'input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"]'
+            );
+            const errorSummary = modalBody.querySelector('.validation-summary-errors');
+            const focusTarget = invalidField || errorSummary;
+            if (focusTarget instanceof HTMLElement) {
+                if (focusTarget === errorSummary) focusTarget.tabIndex = -1;
+                focusTarget.focus({ preventScroll: true });
+                focusTarget.scrollIntoView({ block: 'nearest' });
+            }
         } catch (error) {
             console.error('Error guardando la información:', error);
-            window.AppUtils?.showToast('error', error.message, true);
+            window.AppUtils?.showToast(
+                'error',
+                error instanceof Error ? error.message : 'No se pudo guardar la información.',
+                true
+            );
         } finally {
             if (submitButton?.isConnected) submitButton.disabled = false;
         }

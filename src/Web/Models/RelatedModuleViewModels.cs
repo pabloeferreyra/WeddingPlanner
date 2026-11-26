@@ -230,9 +230,6 @@ public sealed class VendorDocumentFormViewModel
     [Required, Url]
     public string FileUrl { get; set; } = string.Empty;
 
-    [Range(0, long.MaxValue)]
-    public long FileSizeBytes { get; set; }
-
     [DataType(DataType.Date)]
     public DateTime? ExpiryDate { get; set; }
 }

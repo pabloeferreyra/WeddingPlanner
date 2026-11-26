@@ -749,9 +749,6 @@ namespace WeddingPlanner.Web.Data.Migrations
                     b.Property<DateTime?>("ExpiryDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long>("FileSizeBytes")
-                        .HasColumnType("bigint");
-
                     b.Property<string>("FileUrl")
                         .IsRequired()
                         .HasColumnType("text");

@@ -82,14 +82,36 @@ public sealed class WeddingPlanningController(
         var assignments = (await getAllVendorAssignments.HandleAsync())
             .Where(assignment => assignment.WeddingId == weddingId)
             .ToList();
+        var guests = await getGuestsByWedding.HandleAsync(
+            new GetGuestsByWeddingQuery(weddingId),
+            cancellationToken);
+        var timelines = (await getAllTimelines.HandleAsync())
+            .Where(timeline => timeline.WeddingId == weddingId)
+            .OrderBy(timeline => timeline.ScheduledDate)
+            .ToList();
+
+        var completedProgressItems = tasks.Count(task =>
+            task.Status == TaskStatus.Completed)
+            + checklists.Count(item => item.IsCompleted)
+            + timelines.Count(item => item.IsCompleted);
+        var totalProgressItems = tasks.Count + checklists.Count + timelines.Count;
+
+        ViewData["BudgetRemaining"] = budget?.GetRemainingBudget();
+        ViewData["ConfirmedGuestCount"] = guests.Count(guest =>
+            guest.RSVPStatus == GuestStatus.Confirmed);
+        ViewData["CompletedTaskCount"] = tasks.Count(task =>
+            task.Status == TaskStatus.Completed);
+        ViewData["CompletedProgressItems"] = completedProgressItems;
+        ViewData["TotalProgressItems"] = totalProgressItems;
+        ViewData["PlanningProgressPercent"] = totalProgressItems == 0
+            ? null
+            : (int?)Math.Round(completedProgressItems * 100d / totalProgressItems);
 
         return View(new WeddingPlanningViewModel
         {
             Wedding = wedding,
             Budget = budget,
-            Guests = await getGuestsByWedding.HandleAsync(
-                new GetGuestsByWeddingQuery(weddingId),
-                cancellationToken),
+            Guests = guests,
             Expenses = budget is null
                 ? []
                 : (await getAllExpenses.HandleAsync())
@@ -98,10 +120,7 @@ public sealed class WeddingPlanningController(
                     .ToList(),
             Tasks = tasks,
             ChecklistItems = checklists,
-            Timelines = (await getAllTimelines.HandleAsync())
-                .Where(timeline => timeline.WeddingId == weddingId)
-                .OrderBy(timeline => timeline.ScheduledDate)
-                .ToList(),
+            Timelines = timelines,
             VendorAssignments = assignments,
             Vendors = (await getAllVendors.HandleAsync()).ToList()
         });

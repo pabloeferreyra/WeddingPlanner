@@ -1,306 +1,487 @@
 @model WeddingPlanner.Web.Models.WeddingPlanningViewModel
+@using WeddingPlanner.Core.Domain.Enums
+@using TaskStatus = WeddingPlanner.Core.Domain.Enums.TaskStatus
 
 @{
     ViewData["Title"] = $"Organización - {Model.Wedding.Title}";
     var weddingId = Model.Wedding.Id;
+    var confirmedGuestCount = ViewData["ConfirmedGuestCount"] is int confirmed ? confirmed : 0;
+    var completedTaskCount = ViewData["CompletedTaskCount"] is int completedTasks ? completedTasks : 0;
+    var completedProgressItems = ViewData["CompletedProgressItems"] is int completedItems ? completedItems : 0;
+    var totalProgressItems = ViewData["TotalProgressItems"] is int totalItems ? totalItems : 0;
+    var progressPercent = ViewData["PlanningProgressPercent"] is int percent ? percent : (int?)null;
+    var budgetRemaining = ViewData["BudgetRemaining"] is decimal remaining ? remaining : (decimal?)null;
 }
 
-<section class="section-heading">
-    <div>
-        <p class="eyebrow">Planificación</p>
-        <h1>@Model.Wedding.Title</h1>
-    </div>
-    <div class="d-flex gap-2">
+<div class="planning-page">
+    <header class="planning-header" id="planning-overview">
+        <div class="planning-header-copy">
+            <p class="eyebrow">Espacio de planificación</p>
+            <h1>@Model.Wedding.Title</h1>
+            <p class="planning-intro">Todo lo necesario para organizar la celebración, en un solo lugar.</p>
+            <div class="planning-event-meta">
+                <span>Fecha: <time datetime="@Model.Wedding.WeddingDate.ToString("yyyy-MM-dd")">@Model.Wedding.WeddingDate.ToString("D")</time></span>
+                <span class="planning-status">@Model.Wedding.Status</span>
+            </div>
+        </div>
         <a asp-controller="Weddings" asp-action="Details" asp-route-id="@weddingId" class="btn btn-outline-secondary">
             Volver a la celebración
         </a>
-    </div>
-</section>
+    </header>
 
-@if (TempData["ModuleMessage"] is string message)
-{
-    <div class="alert alert-warning" role="alert">@message</div>
-}
+    @if (TempData["ModuleMessage"] is string message)
+    {
+        <div class="alert alert-warning" role="alert">@message</div>
+    }
 
-<section class="card border-0 shadow-sm p-4 mb-4" aria-labelledby="budget-heading">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <div>
-            <p class="eyebrow mb-1">Finanzas</p>
-            <h2 id="budget-heading" class="h4">Presupuesto</h2>
+    <nav class="planning-nav" aria-label="Secciones de planificación">
+        <a href="#planning-summary">Resumen</a>
+        <a href="#budget">Presupuesto</a>
+        <a href="#guests">Invitados</a>
+        <a href="#expenses">Gastos</a>
+        <a href="#tasks">Tareas</a>
+        <a href="#timeline">Cronograma</a>
+        <a href="#vendors">Proveedores</a>
+    </nav>
+
+    <section class="planning-summary" id="planning-summary" aria-label="Resumen de la planificación">
+        <article class="planning-metric planning-progress-card">
+            <div class="planning-metric-topline">
+                <span class="planning-metric-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7" /></svg>
+                </span>
+                <span class="planning-metric-label">Avance general</span>
+            </div>
+            @if (progressPercent is int progress)
+            {
+                <strong class="planning-progress-value">@progress%</strong>
+                <progress value="@progress" max="100" aria-label="Progreso general de planificación">@progress%</progress>
+                <span class="planning-metric-note">@completedProgressItems de @totalProgressItems actividades completadas</span>
+            }
+            else
+            {
+                <strong class="planning-progress-value">Sin actividades</strong>
+                <p class="planning-metric-note">Agregá tareas, elementos o actividades para ver el avance.</p>
+            }
+        </article>
+        <article class="planning-metric">
+            <div class="planning-metric-topline">
+                <span class="planning-metric-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20m5.5-9a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-7.5a4 4 0 0 1 0 7.7m4.5 8.8v-1.5a4 4 0 0 0-3-3.87" /></svg>
+                </span>
+                <span class="planning-metric-label">Invitados confirmados</span>
+            </div>
+            <strong class="planning-metric-value">@confirmedGuestCount <small>/ @Model.Guests.Count</small></strong>
+            <span class="planning-metric-note">personas en la lista</span>
+        </article>
+        <article class="planning-metric">
+            <div class="planning-metric-topline">
+                <span class="planning-metric-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /><path d="M20 12v7H4V5h11" /></svg>
+                </span>
+                <span class="planning-metric-label">Tareas completadas</span>
+            </div>
+            <strong class="planning-metric-value">@completedTaskCount <small>/ @Model.Tasks.Count</small></strong>
+            <span class="planning-metric-note">tareas finalizadas</span>
+        </article>
+        <article class="planning-metric">
+            <div class="planning-metric-topline">
+                <span class="planning-metric-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2" /><path d="M8 3v4m8-4v4M3 10h18" /></svg>
+                </span>
+                <span class="planning-metric-label">Presupuesto disponible</span>
+            </div>
+            @if (budgetRemaining is decimal remainingAmount)
+            {
+                <strong class="planning-metric-value">@remainingAmount.ToString("C")</strong>
+                <span class="planning-metric-note">saldo del presupuesto</span>
+            }
+            else
+            {
+                <strong class="planning-metric-value">Sin definir</strong>
+                <span class="planning-metric-note">crea un presupuesto para comenzar</span>
+            }
+        </article>
+    </section>
+
+    <section class="planning-module" id="budget" aria-labelledby="budget-heading">
+        <div class="planning-module-heading">
+            <div class="planning-module-title">
+                <span class="planning-module-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2" /><path d="M3 10h18m-5 5h2" /></svg>
+                </span>
+                <div>
+                    <p class="eyebrow">Finanzas</p>
+                    <h2 id="budget-heading">Presupuesto</h2>
+                    <p>Tené a mano el total y el dinero disponible para la celebración.</p>
+                </div>
+            </div>
+            @if (Model.Budget is null)
+            {
+                <button type="button" class="btn btn-primary"
+                        data-open-modal data-modal-id="GlobalModal"
+                        data-url="@Url.Action("CreateBudget", "WeddingPlanning", new { weddingId })"
+                        data-title="Crear presupuesto">Crear presupuesto</button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-outline-primary"
+                        data-open-modal data-modal-id="GlobalModal"
+                        data-url="@Url.Action("EditBudget", "WeddingPlanning", new { weddingId, id = Model.Budget.Id })"
+                        data-title="Editar presupuesto">Editar presupuesto</button>
+            }
         </div>
         @if (Model.Budget is null)
         {
-            <button type="button" class="btn btn-primary"
-                    data-open-modal data-modal-id="GlobalModal"
-                    data-url="@Url.Action("CreateBudget", "WeddingPlanning", new { weddingId })"
-                    data-title="Crear presupuesto">Crear presupuesto</button>
+            <div class="planning-empty-state">Todavía no se definió un presupuesto para esta celebración.</div>
         }
         else
         {
-            <button type="button" class="btn btn-outline-primary"
-                    data-open-modal data-modal-id="GlobalModal"
-                    data-url="@Url.Action("EditBudget", "WeddingPlanning", new { weddingId, id = Model.Budget.Id })"
-                    data-title="Editar presupuesto">Editar presupuesto</button>
+            <dl class="planning-finance-grid">
+                <div><dt>Presupuesto total</dt><dd>@Model.Budget.TotalAmount.ToString("C")</dd></div>
+                <div><dt>Gastado hasta ahora</dt><dd>@Model.Budget.CurrentSpent.ToString("C")</dd></div>
+                <div><dt>Disponible</dt><dd>@budgetRemaining?.ToString("C")</dd></div>
+            </dl>
         }
-    </div>
-    @if (Model.Budget is null)
-    {
-        <p class="text-muted mb-0">Todavía no se definió un presupuesto para esta celebración.</p>
-    }
-    else
-    {
-        <div class="row mt-2">
-            <div class="col-md-4"><strong>Total:</strong> @Model.Budget.TotalAmount.ToString("C")</div>
-            <div class="col-md-4"><strong>Gastado:</strong> @Model.Budget.CurrentSpent.ToString("C")</div>
-            <div class="col-md-4"><strong>Disponible:</strong> @Model.Budget.GetRemainingBudget().ToString("C")</div>
-        </div>
-    }
-</section>
+    </section>
 
-<section class="card border-0 shadow-sm p-4 mb-4" aria-labelledby="guests-heading">
-    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-        <h2 id="guests-heading" class="h4 mb-0">Invitados <span class="text-muted">(@Model.Guests.Count)</span></h2>
-        <button type="button" class="btn btn-primary btn-sm"
-                data-open-modal data-modal-id="GlobalModal"
-                data-url="@Url.Action("CreateGuest", "WeddingPlanning", new { weddingId })"
-                data-title="Agregar invitado">Agregar invitado</button>
-    </div>
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead><tr><th>Nombre</th><th>Correo</th><th>Confirmación</th><th>Comida</th><th>Mesa</th><th>Etiquetas</th><th>Acciones</th></tr></thead>
-            <tbody>
-            @if (Model.Guests.Count == 0)
-            {
-                <tr><td colspan="7" class="text-center text-muted">Todavía no hay invitados.</td></tr>
-            }
-            @foreach (var guest in Model.Guests)
-            {
-                <tr>
-                    <td>@guest.FirstName @guest.LastName</td>
-                    <td>@guest.Email</td>
-                    <td>@guest.RSVPStatus</td>
-                    <td>@guest.MealPreference</td>
-                    <td>@(guest.TableNumber?.ToString() ?? "—")</td>
-                    <td>@(guest.IsFamily ? "Familia " : "")@(guest.IsVIP ? "VIP" : "")</td>
-                    <td class="text-nowrap">
-                        <button type="button" class="btn btn-sm btn-outline-primary"
-                                data-open-modal data-modal-id="GlobalModal"
-                                data-url="@Url.Action("EditGuest", "WeddingPlanning", new { weddingId, id = guest.Id })"
-                                data-title="Editar invitado">Editar</button>
-                        <form asp-controller="WeddingPlanning" asp-action="DeleteGuest"
-                              asp-route-weddingId="@weddingId" asp-route-id="@guest.Id" method="post" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    </div>
-</section>
-
-<section class="card border-0 shadow-sm p-4 mb-4" aria-labelledby="expenses-heading">
-    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-        <h2 id="expenses-heading" class="h4 mb-0">Gastos <span class="text-muted">(@Model.Expenses.Count)</span></h2>
-        @if (Model.Budget is not null)
-        {
-            <button type="button" class="btn btn-primary btn-sm"
-                    data-open-modal data-modal-id="GlobalModal"
-                    data-url="@Url.Action("CreateExpense", "WeddingPlanning", new { weddingId })"
-                    data-title="Agregar gasto">Agregar gasto</button>
-        }
-    </div>
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead><tr><th>Descripción</th><th>Categoría</th><th>Fecha</th><th>Proveedor</th><th>Importe</th><th>Acciones</th></tr></thead>
-            <tbody>
-            @if (Model.Expenses.Count == 0)
-            {
-                <tr><td colspan="6" class="text-center text-muted">@(Model.Budget is null ? "Crea un presupuesto para registrar gastos." : "Todavía no hay gastos.")</td></tr>
-            }
-            @foreach (var expense in Model.Expenses)
-            {
-                <tr>
-                    <td>@expense.Description</td>
-                    <td>@expense.Category</td>
-                    <td>@expense.ExpenseDate.ToString("d")</td>
-                    <td>@(expense.VendorName ?? "—")</td>
-                    <td>@expense.Amount.ToString("C")</td>
-                    <td class="text-nowrap">
-                        <button type="button" class="btn btn-sm btn-outline-primary"
-                                data-open-modal data-modal-id="GlobalModal"
-                                data-url="@Url.Action("EditExpense", "WeddingPlanning", new { weddingId, id = expense.Id })"
-                                data-title="Editar gasto">Editar</button>
-                        <form asp-controller="WeddingPlanning" asp-action="DeleteExpense"
-                              asp-route-weddingId="@weddingId" asp-route-id="@expense.Id" method="post" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    </div>
-</section>
-
-<section class="card border-0 shadow-sm p-4 mb-4" aria-labelledby="tasks-heading">
-    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-        <h2 id="tasks-heading" class="h4 mb-0">Tareas y checklist <span class="text-muted">(@Model.Tasks.Count)</span></h2>
-        <button type="button" class="btn btn-primary btn-sm"
-                data-open-modal data-modal-id="GlobalModal"
-                data-url="@Url.Action("CreateTask", "WeddingPlanning", new { weddingId })"
-                data-title="Agregar tarea">Agregar tarea</button>
-    </div>
-    @if (Model.Tasks.Count == 0)
-    {
-        <p class="text-center text-muted">Todavía no hay tareas.</p>
-    }
-    @foreach (var task in Model.Tasks)
-    {
-        <article class="border rounded p-3 mb-3">
-            <div class="d-flex flex-wrap justify-content-between gap-2">
+    <section class="planning-module" id="guests" aria-labelledby="guests-heading">
+        <div class="planning-module-heading">
+            <div class="planning-module-title">
+                <span class="planning-module-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" /><path d="M3 20v-1.5A4.5 4.5 0 0 1 7.5 14h3a4.5 4.5 0 0 1 4.5 4.5V20m.5-15a3 3 0 0 1 0 6m2 3h1a3 3 0 0 1 3 3v3" /></svg>
+                </span>
                 <div>
-                    <h3 class="h5 mb-1">@task.Title</h3>
-                    <p class="text-muted mb-1">Vence @task.DueDate.ToString("d") · @task.Category · @task.Priority · @task.Status</p>
-                    @if (!string.IsNullOrWhiteSpace(task.Description))
-                    {
-                        <p class="mb-2">@task.Description</p>
-                    }
-                </div>
-                <div class="d-flex gap-1 align-items-start">
-                    <button type="button" class="btn btn-sm btn-outline-primary"
-                            data-open-modal data-modal-id="GlobalModal"
-                            data-url="@Url.Action("EditTask", "WeddingPlanning", new { weddingId, id = task.Id })"
-                            data-title="Editar tarea">Editar</button>
-                    <form asp-controller="WeddingPlanning" asp-action="DeleteTask"
-                          asp-route-weddingId="@weddingId" asp-route-id="@task.Id" method="post">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
-                    </form>
+                    <p class="eyebrow">Lista de asistentes</p>
+                    <h2 id="guests-heading">Invitados <span class="planning-count">@Model.Guests.Count</span></h2>
+                    <p>Organizá las confirmaciones, preferencias y mesas.</p>
                 </div>
             </div>
-            <div class="d-flex justify-content-between align-items-center mt-2">
-                <h4 class="h6 mb-0">Checklist</h4>
-                <button type="button" class="btn btn-sm btn-outline-primary"
-                        data-open-modal data-modal-id="GlobalModal"
-                        data-url="@Url.Action("CreateChecklistItem", "WeddingPlanning", new { weddingId, taskId = task.Id })"
-                        data-title="Agregar al checklist">Agregar elemento</button>
-            </div>
-            <ul class="list-group list-group-flush mt-2">
-                @foreach (var item in Model.ChecklistItems.Where(item => item.TaskId == task.Id))
+            <button type="button" class="btn btn-primary"
+                    data-open-modal data-modal-id="GlobalModal"
+                    data-url="@Url.Action("CreateGuest", "WeddingPlanning", new { weddingId })"
+                    data-title="Agregar invitado">Agregar invitado</button>
+        </div>
+        <div class="planning-table-wrap">
+            <table class="table planning-table">
+                <caption class="visually-hidden">Invitados de @Model.Wedding.Title</caption>
+                <thead><tr><th scope="col">Nombre</th><th scope="col">Correo</th><th scope="col">Confirmación</th><th scope="col">Comida</th><th scope="col">Mesa</th><th scope="col">Etiquetas</th><th scope="col">Acciones</th></tr></thead>
+                <tbody>
+                @if (Model.Guests.Count == 0)
                 {
-                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center gap-2">
-                        <span>@(item.IsCompleted ? "✓ " : "")@item.Description</span>
-                        <div class="d-flex gap-1">
+                    <tr><td colspan="7"><div class="planning-empty-state">Todavía no hay invitados en la lista.</div></td></tr>
+                }
+                @foreach (var guest in Model.Guests)
+                {
+                    var guestStatus = guest.RSVPStatus switch
+                    {
+                        GuestStatus.Confirmed => "Confirmado",
+                        GuestStatus.Declined => "No asiste",
+                        _ => "Pendiente"
+                    };
+                    <tr>
+                        <td data-label="Nombre"><strong>@guest.FirstName @guest.LastName</strong></td>
+                        <td data-label="Correo">@(guest.Email ?? "—")</td>
+                        <td data-label="Confirmación"><span class="planning-badge planning-badge-@guest.RSVPStatus.ToString().ToLowerInvariant()">@guestStatus</span></td>
+                        <td data-label="Comida">@guest.MealPreference</td>
+                        <td data-label="Mesa">@(guest.TableNumber?.ToString() ?? "—")</td>
+                        <td data-label="Etiquetas">
+                            @if (guest.IsFamily) { <span class="planning-tag">Familia</span> }
+                            @if (guest.IsVIP) { <span class="planning-tag">VIP</span> }
+                            @if (!guest.IsFamily && !guest.IsVIP) { <span>—</span> }
+                        </td>
+                        <td data-label="Acciones" class="planning-actions">
                             <button type="button" class="btn btn-sm btn-outline-primary"
                                     data-open-modal data-modal-id="GlobalModal"
-                                    data-url="@Url.Action("EditChecklistItem", "WeddingPlanning", new { weddingId, taskId = task.Id, id = item.Id })"
-                                    data-title="Editar elemento">Editar</button>
-                            <form asp-controller="WeddingPlanning" asp-action="DeleteChecklistItem"
-                                  asp-route-weddingId="@weddingId" asp-route-taskId="@task.Id" asp-route-id="@item.Id" method="post">
+                                    data-url="@Url.Action("EditGuest", "WeddingPlanning", new { weddingId, id = guest.Id })"
+                                    data-title="Editar invitado">Editar</button>
+                            <form asp-controller="WeddingPlanning" asp-action="DeleteGuest"
+                                  asp-route-weddingId="@weddingId" asp-route-id="@guest.Id" method="post">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
                             </form>
-                        </div>
-                    </li>
+                        </td>
+                    </tr>
                 }
-            </ul>
-        </article>
-    }
-</section>
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-<section class="card border-0 shadow-sm p-4 mb-4" aria-labelledby="timeline-heading">
-    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-        <h2 id="timeline-heading" class="h4 mb-0">Cronograma <span class="text-muted">(@Model.Timelines.Count)</span></h2>
-        <button type="button" class="btn btn-primary btn-sm"
-                data-open-modal data-modal-id="GlobalModal"
-                data-url="@Url.Action("CreateTimeline", "WeddingPlanning", new { weddingId })"
-                data-title="Agregar actividad">Agregar actividad</button>
-    </div>
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead><tr><th>Actividad</th><th>Fecha</th><th>Etapa</th><th>Lugar</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody>
-            @if (Model.Timelines.Count == 0)
+    <section class="planning-module" id="expenses" aria-labelledby="expenses-heading">
+        <div class="planning-module-heading">
+            <div class="planning-module-title">
+                <span class="planning-module-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 5h16v15H4zM8 3v4m8-4v4M4 10h16" /><path d="M8 14h3m-3 3h7" /></svg>
+                </span>
+                <div>
+                    <p class="eyebrow">Control financiero</p>
+                    <h2 id="expenses-heading">Gastos <span class="planning-count">@Model.Expenses.Count</span></h2>
+                    <p>Registrá pagos y comprobantes vinculados al presupuesto.</p>
+                </div>
+            </div>
+            @if (Model.Budget is not null)
             {
-                <tr><td colspan="6" class="text-center text-muted">Todavía no hay actividades programadas.</td></tr>
+                <button type="button" class="btn btn-primary"
+                        data-open-modal data-modal-id="GlobalModal"
+                        data-url="@Url.Action("CreateExpense", "WeddingPlanning", new { weddingId })"
+                        data-title="Agregar gasto">Agregar gasto</button>
             }
-            @foreach (var item in Model.Timelines)
+        </div>
+        <div class="planning-table-wrap">
+            <table class="table planning-table">
+                <caption class="visually-hidden">Gastos de @Model.Wedding.Title</caption>
+                <thead><tr><th scope="col">Descripción</th><th scope="col">Categoría</th><th scope="col">Fecha</th><th scope="col">Proveedor</th><th scope="col">Importe</th><th scope="col">Acciones</th></tr></thead>
+                <tbody>
+                @if (Model.Expenses.Count == 0)
+                {
+                    <tr><td colspan="6"><div class="planning-empty-state">@(Model.Budget is null ? "Crea un presupuesto para registrar gastos." : "Todavía no hay gastos registrados.")</div></td></tr>
+                }
+                @foreach (var expense in Model.Expenses)
+                {
+                    <tr>
+                        <td data-label="Descripción"><strong>@expense.Description</strong></td>
+                        <td data-label="Categoría">@expense.Category</td>
+                        <td data-label="Fecha">@expense.ExpenseDate.ToString("d")</td>
+                        <td data-label="Proveedor">@(expense.VendorName ?? "—")</td>
+                        <td data-label="Importe"><strong>@expense.Amount.ToString("C")</strong></td>
+                        <td data-label="Acciones" class="planning-actions">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    data-open-modal data-modal-id="GlobalModal"
+                                    data-url="@Url.Action("EditExpense", "WeddingPlanning", new { weddingId, id = expense.Id })"
+                                    data-title="Editar gasto">Editar</button>
+                            <form asp-controller="WeddingPlanning" asp-action="DeleteExpense"
+                                  asp-route-weddingId="@weddingId" asp-route-id="@expense.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="planning-module" id="tasks" aria-labelledby="tasks-heading">
+        <div class="planning-module-heading">
+            <div class="planning-module-title">
+                <span class="planning-module-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /><path d="M20 12v7H4V5h11" /></svg>
+                </span>
+                <div>
+                    <p class="eyebrow">Organización</p>
+                    <h2 id="tasks-heading">Tareas y checklist <span class="planning-count">@Model.Tasks.Count</span></h2>
+                    <p>Convertí los preparativos en pasos claros y fáciles de seguir.</p>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary"
+                    data-open-modal data-modal-id="GlobalModal"
+                    data-url="@Url.Action("CreateTask", "WeddingPlanning", new { weddingId })"
+                    data-title="Agregar tarea">Agregar tarea</button>
+        </div>
+        @if (Model.Tasks.Count == 0)
+        {
+            <div class="planning-empty-state">Todavía no hay tareas. Agregá la primera para empezar a organizarte.</div>
+        }
+        <div class="planning-task-list">
+            @foreach (var task in Model.Tasks)
             {
-                <tr>
-                    <td>@item.EventName</td>
-                    <td>@item.ScheduledDate.ToString("g")</td>
-                    <td>@item.Category</td>
-                    <td>@(item.Location ?? "—")</td>
-                    <td>@(item.IsCompleted ? "Completado" : "Pendiente")</td>
-                    <td class="text-nowrap">
+                var taskStatus = task.Status switch
+                {
+                    TaskStatus.InProgress => "En curso",
+                    TaskStatus.InReview => "En revisión",
+                    TaskStatus.Completed => "Completada",
+                    TaskStatus.Blocked => "Bloqueada",
+                    _ => "Pendiente"
+                };
+                var taskPriority = task.Priority switch
+                {
+                    TaskPriority.Low => "Baja",
+                    TaskPriority.Medium => "Media",
+                    TaskPriority.High => "Alta",
+                    TaskPriority.Critical => "Crítica",
+                    _ => task.Priority.ToString()
+                };
+                <article class="planning-task">
+                    <div class="planning-task-heading">
+                        <div>
+                            <p class="eyebrow">@task.Category</p>
+                            <h3>@task.Title</h3>
+                        </div>
+                        <span class="planning-badge planning-badge-@task.Status.ToString().ToLowerInvariant()">@taskStatus</span>
+                    </div>
+                    <div class="planning-task-meta">
+                        <span>Vence @task.DueDate.ToString("d")</span>
+                        <span>Prioridad: @taskPriority</span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(task.Description))
+                    {
+                        <p class="planning-task-description">@task.Description</p>
+                    }
+                    <div class="planning-task-actions">
                         <button type="button" class="btn btn-sm btn-outline-primary"
                                 data-open-modal data-modal-id="GlobalModal"
-                                data-url="@Url.Action("EditTimeline", "WeddingPlanning", new { weddingId, id = item.Id })"
-                                data-title="Editar actividad">Editar</button>
-                        <form asp-controller="WeddingPlanning" asp-action="DeleteTimeline"
-                              asp-route-weddingId="@weddingId" asp-route-id="@item.Id" method="post" class="d-inline">
+                                data-url="@Url.Action("EditTask", "WeddingPlanning", new { weddingId, id = task.Id })"
+                                data-title="Editar tarea">Editar tarea</button>
+                        <form asp-controller="WeddingPlanning" asp-action="DeleteTask"
+                              asp-route-weddingId="@weddingId" asp-route-id="@task.Id" method="post">
                             @Html.AntiForgeryToken()
                             <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
                         </form>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    </div>
-</section>
-
-<section class="card border-0 shadow-sm p-4 mb-4" aria-labelledby="vendors-heading">
-    <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-        <h2 id="vendors-heading" class="h4 mb-0">Proveedores contratados <span class="text-muted">(@Model.VendorAssignments.Count)</span></h2>
-        <button type="button" class="btn btn-primary btn-sm"
-                data-open-modal data-modal-id="GlobalModal"
-                data-url="@Url.Action("CreateVendorAssignment", "WeddingPlanning", new { weddingId })"
-                data-title="Asignar proveedor">Asignar proveedor</button>
-    </div>
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead><tr><th>Proveedor</th><th>Contrato</th><th>Importe</th><th>Pagado</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody>
-            @if (Model.VendorAssignments.Count == 0)
-            {
-                <tr><td colspan="6" class="text-center text-muted">Todavía no hay proveedores asignados.</td></tr>
-            }
-            @foreach (var assignment in Model.VendorAssignments)
-            {
-                var vendor = Model.Vendors.FirstOrDefault(candidate => candidate.Id == assignment.VendorId);
-                <tr>
-                    <td>
-                        @(vendor?.BusinessName ?? "Proveedor no disponible")
-                        @if (vendor is not null)
+                    </div>
+                    <div class="planning-checklist-heading">
+                        <h4>Checklist <span class="planning-count">@Model.ChecklistItems.Count(item => item.TaskId == task.Id)</span></h4>
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                data-open-modal data-modal-id="GlobalModal"
+                                data-url="@Url.Action("CreateChecklistItem", "WeddingPlanning", new { weddingId, taskId = task.Id })"
+                                data-title="Agregar al checklist">Agregar elemento</button>
+                    </div>
+                    <ul class="planning-checklist">
+                        @foreach (var item in Model.ChecklistItems.Where(item => item.TaskId == task.Id))
                         {
-                            <div><a asp-controller="VendorDocuments" asp-action="Index" asp-route-vendorId="@vendor.Id">Documentos</a></div>
+                            <li>
+                                <span class="planning-checklist-label">
+                                    <span class="planning-check-indicator @(item.IsCompleted ? "is-complete" : "")" aria-hidden="true">@(item.IsCompleted ? "✓" : "")</span>
+                                    <span>@item.Description</span>
+                                </span>
+                                <span class="planning-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                            data-open-modal data-modal-id="GlobalModal"
+                                            data-url="@Url.Action("EditChecklistItem", "WeddingPlanning", new { weddingId, taskId = task.Id, id = item.Id })"
+                                            data-title="Editar elemento">Editar</button>
+                                    <form asp-controller="WeddingPlanning" asp-action="DeleteChecklistItem"
+                                          asp-route-weddingId="@weddingId" asp-route-taskId="@task.Id" asp-route-id="@item.Id" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                                    </form>
+                                </span>
+                            </li>
                         }
-                    </td>
-                    <td>@assignment.ContractDate.ToString("d")</td>
-                    <td>@assignment.PaymentAmount.ToString("C")</td>
-                    <td>@assignment.TotalPaid.ToString("C")</td>
-                    <td>@assignment.PaymentStatus</td>
-                    <td class="text-nowrap">
-                        <button type="button" class="btn btn-sm btn-outline-primary"
-                                data-open-modal data-modal-id="GlobalModal"
-                                data-url="@Url.Action("EditVendorAssignment", "WeddingPlanning", new { weddingId, id = assignment.Id })"
-                                data-title="Editar asignación">Editar</button>
-                        <form asp-controller="WeddingPlanning" asp-action="DeleteVendorAssignment"
-                              asp-route-weddingId="@weddingId" asp-route-id="@assignment.Id" method="post" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
-                        </form>
-                    </td>
-                </tr>
+                    </ul>
+                </article>
             }
-            </tbody>
-        </table>
-    </div>
-</section>
+        </div>
+    </section>
+
+    <section class="planning-module" id="timeline" aria-labelledby="timeline-heading">
+        <div class="planning-module-heading">
+            <div class="planning-module-title">
+                <span class="planning-module-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                </span>
+                <div>
+                    <p class="eyebrow">Día de la celebración</p>
+                    <h2 id="timeline-heading">Cronograma <span class="planning-count">@Model.Timelines.Count</span></h2>
+                    <p>Ordená los momentos importantes y sus horarios.</p>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary"
+                    data-open-modal data-modal-id="GlobalModal"
+                    data-url="@Url.Action("CreateTimeline", "WeddingPlanning", new { weddingId })"
+                    data-title="Agregar actividad">Agregar actividad</button>
+        </div>
+        <div class="planning-table-wrap">
+            <table class="table planning-table">
+                <caption class="visually-hidden">Cronograma de @Model.Wedding.Title</caption>
+                <thead><tr><th scope="col">Actividad</th><th scope="col">Fecha</th><th scope="col">Etapa</th><th scope="col">Lugar</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead>
+                <tbody>
+                @if (Model.Timelines.Count == 0)
+                {
+                    <tr><td colspan="6"><div class="planning-empty-state">Todavía no hay actividades programadas.</div></td></tr>
+                }
+                @foreach (var item in Model.Timelines)
+                {
+                    <tr>
+                        <td data-label="Actividad"><strong>@item.EventName</strong></td>
+                        <td data-label="Fecha">@item.ScheduledDate.ToString("g")</td>
+                        <td data-label="Etapa">@item.Category</td>
+                        <td data-label="Lugar">@(item.Location ?? "—")</td>
+                        <td data-label="Estado"><span class="planning-badge @(item.IsCompleted ? "planning-badge-completed" : "planning-badge-pending")">@(item.IsCompleted ? "Completada" : "Pendiente")</span></td>
+                        <td data-label="Acciones" class="planning-actions">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    data-open-modal data-modal-id="GlobalModal"
+                                    data-url="@Url.Action("EditTimeline", "WeddingPlanning", new { weddingId, id = item.Id })"
+                                    data-title="Editar actividad">Editar</button>
+                            <form asp-controller="WeddingPlanning" asp-action="DeleteTimeline"
+                                  asp-route-weddingId="@weddingId" asp-route-id="@item.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="planning-module" id="vendors" aria-labelledby="vendors-heading">
+        <div class="planning-module-heading">
+            <div class="planning-module-title">
+                <span class="planning-module-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 9h16l-1 11H5L4 9Zm-1 0 2-5h14l2 5M9 9v3m6-3v3" /></svg>
+                </span>
+                <div>
+                    <p class="eyebrow">Servicios contratados</p>
+                    <h2 id="vendors-heading">Proveedores <span class="planning-count">@Model.VendorAssignments.Count</span></h2>
+                    <p>Consultá contratos y pagos de cada proveedor.</p>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary"
+                    data-open-modal data-modal-id="GlobalModal"
+                    data-url="@Url.Action("CreateVendorAssignment", "WeddingPlanning", new { weddingId })"
+                    data-title="Asignar proveedor">Asignar proveedor</button>
+        </div>
+        <div class="planning-table-wrap">
+            <table class="table planning-table">
+                <caption class="visually-hidden">Proveedores contratados para @Model.Wedding.Title</caption>
+                <thead><tr><th scope="col">Proveedor</th><th scope="col">Contrato</th><th scope="col">Importe</th><th scope="col">Pagado</th><th scope="col">Saldo</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead>
+                <tbody>
+                @if (Model.VendorAssignments.Count == 0)
+                {
+                    <tr><td colspan="7"><div class="planning-empty-state">Todavía no hay proveedores asignados.</div></td></tr>
+                }
+                @foreach (var assignment in Model.VendorAssignments)
+                {
+                    var vendor = Model.Vendors.FirstOrDefault(candidate => candidate.Id == assignment.VendorId);
+                    var paymentStatus = assignment.PaymentStatus switch
+                    {
+                        PaymentStatus.Completed => "Pagado",
+                        PaymentStatus.Failed => "Fallido",
+                        _ => "Pendiente"
+                    };
+                    <tr>
+                        <td data-label="Proveedor">
+                            <strong>@(vendor?.BusinessName ?? "Proveedor no disponible")</strong>
+                            @if (vendor is not null)
+                            {
+                                <a class="planning-table-link" asp-controller="VendorDocuments" asp-action="Index" asp-route-vendorId="@vendor.Id">Ver documentos</a>
+                            }
+                        </td>
+                        <td data-label="Contrato">@assignment.ContractDate.ToString("d")</td>
+                        <td data-label="Importe">@assignment.PaymentAmount.ToString("C")</td>
+                        <td data-label="Pagado">@assignment.TotalPaid.ToString("C")</td>
+                        <td data-label="Saldo"><strong>@((assignment.PaymentAmount - assignment.TotalPaid).ToString("C"))</strong></td>
+                        <td data-label="Estado"><span class="planning-badge planning-badge-@assignment.PaymentStatus.ToString().ToLowerInvariant()">@paymentStatus</span></td>
+                        <td data-label="Acciones" class="planning-actions">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    data-open-modal data-modal-id="GlobalModal"
+                                    data-url="@Url.Action("EditVendorAssignment", "WeddingPlanning", new { weddingId, id = assignment.Id })"
+                                    data-title="Editar asignación">Editar</button>
+                            <form asp-controller="WeddingPlanning" asp-action="DeleteVendorAssignment"
+                                  asp-route-weddingId="@weddingId" asp-route-id="@assignment.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
 
 @section Scripts {
     <script src="~/js/relatedModules.js" asp-append-version="true"></script>
