@@ -59,10 +59,10 @@ public enum ExpenseCategory
 
 public enum TimelineCategory
 {
-    [Display(Name = "Antes de la evento")]
+    [Display(Name = "Antes del evento")]
     PreWedding,
     [Display(Name = "Día del evento")]
     DayOfEvent,
-    [Display(Name = "Después de la evento")] 
+    [Display(Name = "Después del evento")] 
     PostWedding
 }
