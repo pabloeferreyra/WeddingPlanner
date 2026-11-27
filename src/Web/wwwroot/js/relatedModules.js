@@ -74,7 +74,9 @@
                 window.location.assign(response.url);
                 return;
             }
-            if (!response.ok) throw new Error(`No se pudo guardar la información (${response.status}).`);
+            if (!response.ok) throw new Error((response.status === 413 || response.status === 400) && form.querySelector('input[type="file"]')
+                ? 'No se pudo procesar el formulario. Comprueba que el archivo no supere 10 MiB y vuelve a cargar la página.'
+                : `No se pudo guardar la información (${response.status}).`);
 
             const modalBody = form.closest('#GlobalModal-body');
             modalBody.innerHTML = await response.text();

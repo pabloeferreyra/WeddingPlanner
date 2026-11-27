@@ -59,6 +59,85 @@ public class VendorDocumentStorageTests
         Assert.Empty(fixture.Storage.Objects);
     }
 
+    [Theory]
+    [InlineData("contract.pdf", "application/pdf", "pdf")]
+    [InlineData("image.png", "image/png", "png")]
+    [InlineData("image.jpg", "image/jpeg", "jpeg")]
+    public async Task Complete_supported_formats_are_accepted(string name, string type, string format)
+    {
+        var fixture = new Fixture();
+        var bytes = FileBytes(format);
+        var document = await fixture.Service.UploadAsync(fixture.Document(), new MemoryStream(bytes), name, type, "coordinator", default);
+        Assert.Equal(bytes.Length, document.FileSize);
+    }
+
+    [Theory]
+    [InlineData("contract.pdf", "application/pdf", "pdf")]
+    [InlineData("image.png", "image/png", "png")]
+    [InlineData("image.jpg", "image/jpeg", "jpeg")]
+    public async Task Truncated_formats_are_rejected(string name, string type, string format)
+    {
+        var fixture = new Fixture();
+        var bytes = FileBytes(format);
+        await Assert.ThrowsAsync<ValidationException>(() => fixture.Service.UploadAsync(
+            fixture.Document(), new MemoryStream(bytes[..^8]), name, type, "coordinator", default));
+    }
+
+    [Fact]
+    public async Task Empty_files_and_renamed_images_are_rejected()
+    {
+        var fixture = new Fixture();
+        await Assert.ThrowsAsync<ValidationException>(() => fixture.Service.UploadAsync(
+            fixture.Document(), new MemoryStream(), "empty.pdf", "application/pdf", "coordinator", default));
+        await Assert.ThrowsAsync<ValidationException>(() => fixture.Service.UploadAsync(
+            fixture.Document(), new MemoryStream(FileBytes("png")), "renamed.jpg", "image/jpeg", "coordinator", default));
+    }
+
+    [Fact]
+    public async Task Correct_signatures_with_invalid_structure_are_rejected()
+    {
+        var fixture = new Fixture();
+        var pdf = Encoding.ASCII.GetBytes("%PDF-1.4\nno cross reference\n%%EOF");
+        var png = FileBytes("png");
+        png[16] = png[17] = png[18] = png[19] = 0;
+        var jpeg = FileBytes("jpeg");
+        var frame = jpeg.AsSpan().IndexOf(new byte[] { 0xff, 0xc0 });
+        Assert.True(frame >= 0);
+        jpeg[frame + 5] = jpeg[frame + 6] = 0;
+        foreach (var (bytes, name, contentType) in new[]
+        {
+            (pdf, "broken.pdf", "application/pdf"),
+            (png, "broken.png", "image/png"),
+            (jpeg, "broken.jpg", "image/jpeg")
+        })
+            await Assert.ThrowsAsync<ValidationException>(() => fixture.Service.UploadAsync(
+                fixture.Document(), new MemoryStream(bytes), name, contentType, "coordinator", default));
+        Assert.Empty(fixture.Storage.Objects);
+    }
+
+    private static byte[] FileBytes(string format) => format switch
+    {
+        "pdf" => CreatePdf(),
+        "png" => Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="),
+        "jpeg" => Convert.FromBase64String(
+            "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD8qqKKKAP/2Q=="),
+        _ => throw new ArgumentOutOfRangeException(nameof(format))
+    };
+
+    private static byte[] CreatePdf()
+    {
+        var pdf = new StringBuilder("%PDF-1.4\n");
+        var first = pdf.Length;
+        pdf.Append("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+        var second = pdf.Length;
+        pdf.Append("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n");
+        var xref = pdf.Length;
+        pdf.Append("xref\n0 3\n0000000000 65535 f \n");
+        pdf.Append($"{first:D10} 00000 n \n{second:D10} 00000 n \n");
+        pdf.Append($"trailer\n<< /Size 3 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n");
+        return Encoding.ASCII.GetBytes(pdf.ToString());
+    }
+
     [Fact]
     public async Task File_size_limit_is_enforced()
     {
@@ -168,7 +247,7 @@ public class VendorDocumentStorageTests
         public readonly FakeStorage Storage = new();
         public readonly FileStorageOptions Options = new();
         public readonly VendorDocumentService Service;
-        public readonly byte[] Content = Encoding.UTF8.GetBytes("%PDF-1.7\nexample");
+        public readonly byte[] Content = CreatePdf();
 
         public Fixture()
         {

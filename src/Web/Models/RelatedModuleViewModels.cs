@@ -383,7 +383,7 @@ public sealed class VendorDocumentListViewModel
 {
     public required Vendor Vendor { get; init; }
     public IReadOnlyList<VendorDocument> Documents { get; init; } = [];
-    public IReadOnlyList<VendorAssignment> Assignments { get; init; } = [];
+    public IReadOnlyList<WeddingPlanner.Application.Abstractions.Persistence.VendorDocumentAssignment> Assignments { get; init; } = [];
 }
 
 public sealed class NotificationListViewModel

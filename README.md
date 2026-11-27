@@ -109,19 +109,45 @@ Para ejecutar Web fuera de Docker, configura `FileStorage__Endpoint` (por ejempl
 `FileStorage__ForcePathStyle` como variables de entorno o User Secrets. Usa HTTPS
 fuera de desarrollo. Cambiar endpoint, región, credenciales, SSL y path-style permite
 usar otro proveedor compatible con S3; el bucket debe existir y permanecer privado.
-`FileStorage:MaxFileSizeBytes` limita cada archivo a 10 MiB por defecto;
+`FileStorage:MaxFileSizeBytes` limita cada archivo a 10 MiB por defecto y debe estar
+entre 1 y 10 485 760 bytes: valores mayores impiden el inicio. En la creación de
+documentos, Kestrel limita la solicitud completa a 11 MiB para incluir el overhead
+multiparte y cada sección a 10 MiB; solo se acepta un archivo. El servicio conserva
+su propia validación y puede aplicar un límite configurado menor. Una solicitud
+excesiva puede recibir HTTP 413, HTTP 400 si falla el procesamiento del formulario
+o un cierre de conexión; el resultado depende de cuándo el servidor detecta el
+exceso. El resto de los endpoints no recibe estos límites específicos.
+
 `FileStorage:AllowedExtensions` permite restringir PDF, JPG y PNG. El servidor
-comprueba extensión, MIME y firma de archivo. El selector del navegador es solo una
-ayuda; ampliar la lista requiere implementar la validación del nuevo formato.
+comprueba nombre, extensión, MIME y estructura: cabecera, `startxref` y terminador
+para PDF; chunks IHDR, IDAT e IEND para PNG; marcadores, dimensiones y segmentos
+de imagen para JPEG. Los PDF deben terminar con `%%EOF` y tener `startxref` en los
+últimos 2048 bytes; los JPEG deben terminar en el marcador EOI. Estas comprobaciones
+no decodifican imágenes ni verifican CRC, integridad semántica completa o malware:
+algunos archivos inválidos pueden pasar y algunos archivos válidos con relleno
+atípico pueden rechazarse. No hay antivirus integrado; para producción considera
+un escáner independiente antes de incorporar archivos al almacenamiento definitivo.
+El selector del navegador es solo una ayuda; ampliar la lista requiere implementar
+la validación del nuevo formato.
 
 Las descargas pasan por el servidor, verifican el coordinador y se entregan como
-adjuntos sin URL pública. Si falla el registro después de subir, se intenta borrar el
+adjuntos sin URL pública. El stream de descarga libera también la respuesta S3
+cuando el consumidor termina o falla la lectura. Los listados filtran por proveedor,
+asignación y coordinador en PostgreSQL, sin seguimiento EF ni consultas por documento;
+los enlaces externos conservan su acceso anterior. Si falla el registro después de subir, se intenta borrar el
 objeto; si la compensación falla, se registra la clave para su limpieza manual.
 La eliminación primero marca el documento como pendiente en la base de datos; si
 falla S3, vuelve a pulsar Eliminar para reintentar. No se puede borrar un proveedor
 con documentos vinculados: elimina primero sus documentos. La migración
 `AddVendorDocumentStorage` conserva los enlaces y no admite reversión automática
 porque descartaría referencias a objetos; realiza una copia antes de aplicarla.
+
+En producción, usa HTTPS, credenciales secretas y un bucket privado con permisos
+mínimos. Configura cualquier proxy inverso, IIS o balanceador para aceptar al menos
+11 MiB en esta ruta; un límite inferior impediría subir archivos válidos. Kestrel no
+tiene un límite global personalizado en este proyecto. Establece límites y tiempos
+de espera adecuados en el proxy y supervisa los errores de almacenamiento y los
+documentos pendientes de eliminación.
 
 ## Validación
 

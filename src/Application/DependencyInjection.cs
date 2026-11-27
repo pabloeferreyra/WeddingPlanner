@@ -108,6 +108,7 @@ public static class DependencyInjection
         services.AddScoped<DeleteVendorPaymentHandler>();
 
         services.AddScoped<GetAllVendorDocumentsHandler>();
+        services.AddScoped<VendorDocumentQueriesHandler>();
         services.AddScoped<GetVendorDocumentByIdHandler>();
         services.AddScoped<AddVendorDocumentHandler>();
         services.AddScoped<UpdateVendorDocumentHandler>();

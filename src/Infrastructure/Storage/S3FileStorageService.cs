@@ -47,7 +47,15 @@ public sealed class S3FileStorageService(IOptions<FileStorageOptions> options) :
     public async Task<Stream> DownloadAsync(string key, CancellationToken cancellationToken)
     {
         var response = await Client.GetObjectAsync(options.Value.Bucket, key, cancellationToken);
-        return response.ResponseStream;
+        try
+        {
+            return new S3ResponseStream(response);
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
     }
 
     public async Task DeleteAsync(string key, CancellationToken cancellationToken)

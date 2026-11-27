@@ -61,7 +61,7 @@ public sealed class WeddingPlanningController(
     AddVendorPaymentHandler addVendorPayment,
     UpdateVendorPaymentHandler updateVendorPayment,
     DeleteVendorPaymentHandler deleteVendorPayment,
-    GetAllVendorDocumentsHandler getAllVendorDocuments,
+    VendorDocumentQueriesHandler documentQueries,
     GetAllVendorsHandler getAllVendors,
     GetWeddingSeatingHandler getWeddingSeating,
     GetWeddingTableHandler getWeddingTable,
@@ -918,7 +918,7 @@ public sealed class WeddingPlanningController(
             ModelState.AddModelError(nameof(model.VendorId), "Selecciona un proveedor válido.");
         }
         else if (vendor.Id != assignment.VendorId
-                 && (await getAllVendorDocuments.HandleAsync()).Any(document => document.VendorAssignmentId == id))
+                 && await documentQueries.HasAssignmentDocumentsAsync(id, HttpContext.RequestAborted))
         {
             ModelState.AddModelError(nameof(model.VendorId), "No puedes cambiar el proveedor mientras haya documentos vinculados.");
         }
@@ -963,8 +963,7 @@ public sealed class WeddingPlanningController(
             return RedirectToAction(nameof(Index), new { weddingId });
         }
 
-        var hasDocuments = (await getAllVendorDocuments.HandleAsync())
-            .Any(document => document.VendorAssignmentId == id);
+        var hasDocuments = await documentQueries.HasAssignmentDocumentsAsync(id, HttpContext.RequestAborted);
         if (hasDocuments)
         {
             TempData["ModuleMessage"] = "Elimina primero los documentos vinculados a esta asignación.";

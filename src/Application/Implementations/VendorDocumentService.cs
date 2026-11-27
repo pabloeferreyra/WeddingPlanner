@@ -63,7 +63,8 @@ public sealed class VendorDocumentService(
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
         if (!settings.AllowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
             throw new ValidationException("La extensión del archivo no está permitida.");
-        if (!content.CanSeek || content.Length <= 0 || settings.MaxFileSizeBytes <= 0 || content.Length > settings.MaxFileSizeBytes)
+        if (!content.CanSeek || content.Length <= 0 || settings.MaxFileSizeBytes <= 0 ||
+            content.Length > settings.MaxFileSizeBytes || content.Length > FileStorageOptions.MaximumFileSizeBytes)
             throw new ValidationException("El archivo está vacío o supera el tamaño permitido.");
 
         var expectedType = extension switch
@@ -75,16 +76,8 @@ public sealed class VendorDocumentService(
         };
         if (!string.Equals(contentType, expectedType, StringComparison.OrdinalIgnoreCase))
             throw new ValidationException("El tipo de contenido no corresponde al formato del archivo.");
-        var signature = new byte[8];
-        content.Position = 0;
-        var read = await content.ReadAtLeastAsync(signature, 8, throwOnEndOfStream: false, cancellationToken);
-        var valid = extension switch
-        {
-            ".pdf" => read >= 5 && signature.AsSpan(0, 5).SequenceEqual("%PDF-"u8),
-            ".png" => read >= 8 && signature.AsSpan().SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }),
-            _ => read >= 3 && signature[0] == 0xff && signature[1] == 0xd8 && signature[2] == 0xff
-        };
-        if (!valid) throw new ValidationException("El contenido no coincide con el formato declarado.");
+        if (!await DocumentFormatValidator.IsValidAsync(content, extension, cancellationToken))
+            throw new ValidationException("El archivo está dañado, incompleto o no coincide con el formato declarado.");
         content.Position = 0;
 
         document.FileUrl = null;

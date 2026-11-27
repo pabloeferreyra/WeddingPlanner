@@ -13,7 +13,7 @@ public class VendorsController(
     GetVendorByIdHandler getVendorByIdHandler,
     UpdateVendorHandler updateVendorHandler,
     DeleteVendorHandler deleteVendorHandler,
-    GetAllVendorDocumentsHandler getAllVendorDocuments
+    VendorDocumentQueriesHandler documentQueries
 ) : Controller
 {
     [HttpGet("")]
@@ -157,7 +157,7 @@ public class VendorsController(
             return NotFound();
         }
 
-        if ((await getAllVendorDocuments.HandleAsync()).Any(document => document.VendorId == id))
+        if (await documentQueries.HasVendorDocumentsAsync(id, cancellationToken))
         {
             ModelState.AddModelError(string.Empty, "Elimina primero los documentos vinculados al proveedor.");
             return PartialView("_Delete", selectedVendor);

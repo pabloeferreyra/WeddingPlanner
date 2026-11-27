@@ -38,7 +38,11 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString, provider =>
                 provider.MigrationsAssembly("WeddingPlanner.Web")));
-        services.Configure<FileStorageOptions>(configuration.GetSection("FileStorage"));
+        services.AddOptions<FileStorageOptions>()
+            .Bind(configuration.GetSection("FileStorage"))
+            .Validate(options => options.MaxFileSizeBytes > 0 && options.MaxFileSizeBytes <= FileStorageOptions.MaximumFileSizeBytes,
+                "FileStorage:MaxFileSizeBytes debe estar entre 1 y 10485760 bytes.")
+            .ValidateOnStart();
         services.AddScoped<IFileStorageService, S3FileStorageService>();
         services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IRepository<Vendor>, VendorRepository>();
@@ -51,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<IVendorAssignmentService, VendorAssignmentService>();
         services.AddScoped<IVendorPaymentService, VendorPaymentService>();
         services.AddScoped<IVendorDocumentService, VendorDocumentService>();
+        services.AddScoped<IVendorDocumentQueries, VendorDocumentQueries>();
         services.AddScoped<IVendorPaymentRepository, VendorPaymentRepository>();
         services.AddScoped<IWeddingRepository, WeddingRepository>();
         services.AddScoped<IGuestRepository, GuestRepository>();

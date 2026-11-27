@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using WeddingPlanner.Application.UseCases.VendorAssignments;
+using WeddingPlanner.Application.Abstractions.Persistence;
+using WeddingPlanner.Application.Abstractions.Services;
 using WeddingPlanner.Application.UseCases.VendorDocuments;
 using WeddingPlanner.Application.UseCases.Vendors;
-using WeddingPlanner.Application.UseCases.Weddings;
 using WeddingPlanner.Core.Domain.Entities;
 using WeddingPlanner.Web.Models;
 
@@ -13,14 +13,12 @@ namespace WeddingPlanner.Web.Controllers;
 [Route("Vendors/{vendorId:guid}/Documents")]
 public sealed class VendorDocumentsController(
     GetVendorByIdHandler getVendorById,
-    GetAllVendorDocumentsHandler getAllDocuments,
+    VendorDocumentQueriesHandler documentQueries,
     GetVendorDocumentByIdHandler getDocumentById,
     AddVendorDocumentHandler addDocument,
     UpdateVendorDocumentHandler updateDocument,
     DeleteVendorDocumentHandler deleteDocument,
-    StoredVendorDocumentHandler storedDocuments,
-    GetAllVendorAssignmentsHandler getAllAssignments,
-    GetAllWeddingsHandler getAllWeddings)
+    StoredVendorDocumentHandler storedDocuments)
     : Controller
 {
     [HttpGet("")]
@@ -32,24 +30,11 @@ public sealed class VendorDocumentsController(
             return NotFound();
         }
 
-        var documents = new List<VendorDocument>();
-        foreach (var document in (await getAllDocuments.HandleAsync()).Where(document => document.VendorId == vendorId))
-        {
-            if (document.StorageKey is null ||
-                (document.VendorAssignmentId is Guid assignmentId &&
-                 await storedDocuments.CanAccessAsync(vendorId, assignmentId, CurrentUserId, HttpContext.RequestAborted)))
-                documents.Add(document);
-        }
-
         return View(new VendorDocumentListViewModel
         {
             Vendor = vendor,
-            Documents = documents
-                .OrderByDescending(document => document.UploadedAt)
-                .ToList(),
-            Assignments = (await getAllAssignments.HandleAsync())
-                .Where(assignment => assignment.VendorId == vendorId)
-                .ToList()
+            Documents = await documentQueries.GetVisibleAsync(vendorId, CurrentUserId, HttpContext.RequestAborted),
+            Assignments = await documentQueries.GetAssignmentsAsync(vendorId, HttpContext.RequestAborted)
         });
     }
 
@@ -78,8 +63,15 @@ public sealed class VendorDocumentsController(
 
     [HttpPost("Create")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(Guid vendorId, VendorDocumentFormViewModel model, CancellationToken cancellationToken)
+    [RequestSizeLimit(FileStorageOptions.MaximumRequestSizeBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = FileStorageOptions.MaximumFileSizeBytes)]
+    public async Task<IActionResult> Create(Guid vendorId, VendorDocumentFormViewModel? model, CancellationToken cancellationToken)
     {
+        if (Request.ContentLength > FileStorageOptions.MaximumRequestSizeBytes)
+            return StatusCode(StatusCodes.Status413PayloadTooLarge);
+        if (model is null)
+            return BadRequest("No se pudo procesar el formulario. Comprueba que el archivo no supere 10 MiB.");
+
         if (await getVendorById.HandleAsync(new GetVendorByIdQuery(vendorId)) is null)
         {
             return NotFound();
@@ -87,6 +79,8 @@ public sealed class VendorDocumentsController(
 
         model.Id = Guid.Empty;
         model.VendorId = vendorId;
+        if (Request.HasFormContentType && Request.Form.Files.Count > 1)
+            ModelState.AddModelError(nameof(model.File), "Solo se permite un archivo por solicitud.");
         var assignment = await GetAssignment(vendorId, model.VendorAssignmentId);
         if (model.VendorAssignmentId is not null && assignment is null)
         {
@@ -219,24 +213,20 @@ public sealed class VendorDocumentsController(
     private string? CurrentUserId =>
         User.Identity?.IsAuthenticated == true ? User.FindFirstValue(ClaimTypes.NameIdentifier) : null;
 
-    private async Task<VendorAssignment?> GetAssignment(Guid vendorId, Guid? assignmentId)
+    private async Task<VendorDocumentAssignment?> GetAssignment(Guid vendorId, Guid? assignmentId)
     {
         if (assignmentId is null)
         {
             return null;
         }
 
-        return (await getAllAssignments.HandleAsync())
-            .FirstOrDefault(assignment =>
-                assignment.Id == assignmentId.Value && assignment.VendorId == vendorId);
+        return (await documentQueries.GetAssignmentsAsync(vendorId, HttpContext.RequestAborted))
+            .FirstOrDefault(assignment => assignment.Id == assignmentId.Value);
     }
 
     private async Task<IActionResult> DocumentForm(VendorDocumentFormViewModel model)
     {
-        ViewData["Assignments"] = (await getAllAssignments.HandleAsync())
-            .Where(assignment => assignment.VendorId == model.VendorId)
-            .ToList();
-        ViewData["Weddings"] = (await getAllWeddings.HandleAsync()).ToDictionary(wedding => wedding.Id);
+        ViewData["Assignments"] = await documentQueries.GetAssignmentsAsync(model.VendorId, HttpContext.RequestAborted);
         return PartialView("Forms/_DocumentForm", model);
     }
 

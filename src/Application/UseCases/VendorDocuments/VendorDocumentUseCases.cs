@@ -1,4 +1,5 @@
 using WeddingPlanner.Application.Abstractions.Services;
+using WeddingPlanner.Application.Abstractions.Persistence;
 using WeddingPlanner.Core.Domain.Entities;
 
 namespace WeddingPlanner.Application.UseCases.VendorDocuments;
@@ -6,6 +7,18 @@ namespace WeddingPlanner.Application.UseCases.VendorDocuments;
 public sealed class GetAllVendorDocumentsHandler(IVendorDocumentService service)
 {
     public Task<IEnumerable<VendorDocument>> HandleAsync() => service.GetAllVendorDocumentsAsync();
+}
+
+public sealed class VendorDocumentQueriesHandler(IVendorDocumentQueries queries)
+{
+    public Task<IReadOnlyList<VendorDocument>> GetVisibleAsync(Guid vendorId, string? userId, CancellationToken cancellationToken) =>
+        queries.GetVisibleByVendorAsync(vendorId, userId, cancellationToken);
+    public Task<IReadOnlyList<VendorDocumentAssignment>> GetAssignmentsAsync(Guid vendorId, CancellationToken cancellationToken) =>
+        queries.GetAssignmentsByVendorAsync(vendorId, cancellationToken);
+    public Task<bool> HasVendorDocumentsAsync(Guid vendorId, CancellationToken cancellationToken) =>
+        queries.HasDocumentsForVendorAsync(vendorId, cancellationToken);
+    public Task<bool> HasAssignmentDocumentsAsync(Guid assignmentId, CancellationToken cancellationToken) =>
+        queries.HasDocumentsForAssignmentAsync(assignmentId, cancellationToken);
 }
 
 public sealed record GetVendorDocumentByIdQuery(Guid VendorDocumentId);
