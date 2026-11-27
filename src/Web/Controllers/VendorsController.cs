@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using WeddingPlanner.Application.UseCases.Vendors;
+using WeddingPlanner.Application.UseCases.VendorDocuments;
 using WeddingPlanner.Web.Helpers;
 using WeddingPlanner.Web.Models;
 using WeddingPlanner.Core.Domain.Entities;
@@ -11,7 +12,8 @@ public class VendorsController(
     AddVendorHandler addVendorHandler,
     GetVendorByIdHandler getVendorByIdHandler,
     UpdateVendorHandler updateVendorHandler,
-    DeleteVendorHandler deleteVendorHandler
+    DeleteVendorHandler deleteVendorHandler,
+    GetAllVendorDocumentsHandler getAllVendorDocuments
 ) : Controller
 {
     [HttpGet("")]
@@ -153,6 +155,12 @@ public class VendorsController(
         if (selectedVendor is null)
         {
             return NotFound();
+        }
+
+        if ((await getAllVendorDocuments.HandleAsync()).Any(document => document.VendorId == id))
+        {
+            ModelState.AddModelError(string.Empty, "Elimina primero los documentos vinculados al proveedor.");
+            return PartialView("_Delete", selectedVendor);
         }
 
         await deleteVendorHandler.HandleAsync(new DeleteVendorCommand(id));

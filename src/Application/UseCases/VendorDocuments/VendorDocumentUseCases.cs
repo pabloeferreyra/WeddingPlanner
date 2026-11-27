@@ -47,3 +47,18 @@ public sealed class VendorDocumentExistsHandler(IVendorDocumentService service)
     public Task<bool> HandleAsync(VendorDocumentExistsQuery query) =>
         service.VendorDocumentExistsAsync(query.VendorDocumentId);
 }
+
+public sealed class StoredVendorDocumentHandler(IVendorDocumentService service)
+{
+    public Task<bool> CanAccessAsync(Guid vendorId, Guid assignmentId, string? userId, CancellationToken cancellationToken) =>
+        service.CanAccessStoredDocumentAsync(vendorId, assignmentId, userId, cancellationToken);
+
+    public Task<VendorDocument> UploadAsync(VendorDocument document, Stream content, string fileName, string contentType, string? userId, CancellationToken cancellationToken) =>
+        service.UploadAsync(document, content, fileName, contentType, userId, cancellationToken);
+
+    public Task<Stream> DownloadAsync(Guid vendorId, Guid documentId, string? userId, CancellationToken cancellationToken) =>
+        service.DownloadAsync(vendorId, documentId, userId, cancellationToken);
+
+    public Task DeleteAsync(Guid vendorId, Guid documentId, string? userId, CancellationToken cancellationToken) =>
+        service.DeleteStoredAsync(vendorId, documentId, userId, cancellationToken);
+}

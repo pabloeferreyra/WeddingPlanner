@@ -40,7 +40,23 @@
                         : "—")
                 </td>
                 <td>
-                    @if (Uri.TryCreate(document.FileUrl, UriKind.Absolute, out var fileUri)
+                    @if (document.StorageKey is not null)
+                    {
+                        @if (document.DeletionPending)
+                        {
+                            <span class="text-warning">Eliminación pendiente; vuelve a intentar.</span>
+                        }
+                        else
+                        {
+                            <a asp-action="Download" asp-route-vendorId="@Model.Vendor.Id" asp-route-id="@document.Id">Descargar @document.FileName</a>
+                            <div class="small text-muted">@document.FileSize bytes · @document.UploadedAt.ToString("g")</div>
+                            @if (!string.IsNullOrWhiteSpace(document.Description))
+                            {
+                                <div class="small">@document.Description</div>
+                            }
+                        }
+                    }
+                    else if (Uri.TryCreate(document.FileUrl, UriKind.Absolute, out var fileUri)
                          && (fileUri.Scheme == Uri.UriSchemeHttps || fileUri.Scheme == Uri.UriSchemeHttp))
                     {
                         <a href="@fileUri.AbsoluteUri" target="_blank" rel="noopener noreferrer">Abrir</a>
@@ -51,10 +67,13 @@
                     }
                 </td>
                 <td class="text-nowrap">
+                    @if (document.StorageKey is null)
+                    {
                     <button type="button" class="btn btn-sm btn-outline-primary"
                             data-open-modal data-modal-id="GlobalModal"
                             data-url="@Url.Action("Edit", "VendorDocuments", new { vendorId = Model.Vendor.Id, id = document.Id })"
                             data-title="Editar documento">Editar</button>
+                    }
                     <form asp-controller="VendorDocuments" asp-action="Delete"
                           asp-route-vendorId="@Model.Vendor.Id" asp-route-id="@document.Id" method="post" class="d-inline">
                         @Html.AntiForgeryToken()

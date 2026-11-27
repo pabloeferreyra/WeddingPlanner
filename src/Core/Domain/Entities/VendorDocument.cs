@@ -19,9 +19,18 @@ public class VendorDocument
     public DocumentType DocumentType { get; set; }
 
     [Url]
-    [Required]
     public string? FileUrl { get; set; }
 
+    [StringLength(500)]
+    public string? StorageKey { get; set; }
+    [StringLength(255)]
+    public string? FileName { get; set; }
+    [StringLength(100)]
+    public string? ContentType { get; set; }
+    public long? FileSize { get; set; }
+    [StringLength(1000)]
+    public string? Description { get; set; }
+    public bool DeletionPending { get; set; }
 
     public DateTime UploadedAt { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
     public DateTime? ExpiryDate { get; set; }

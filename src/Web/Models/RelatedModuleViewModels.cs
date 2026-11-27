@@ -403,8 +403,13 @@ public sealed class VendorDocumentFormViewModel
     [EnumDataType(typeof(DocumentType))]
     public DocumentType DocumentType { get; set; }
 
-    [Required, Url]
-    public string FileUrl { get; set; } = string.Empty;
+    [Url]
+    public string? FileUrl { get; set; }
+
+    public IFormFile? File { get; set; }
+
+    [StringLength(1000)]
+    public string? Description { get; set; }
 
     [DataType(DataType.Date)]
     public DateTime? ExpiryDate { get; set; }

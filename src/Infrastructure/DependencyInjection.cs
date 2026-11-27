@@ -8,6 +8,7 @@ using WeddingPlanner.Application.Implementations;
 using WeddingPlanner.Core.Domain.Entities;
 using WeddingPlanner.Infrastructure.Data;
 using WeddingPlanner.Infrastructure.Repositories;
+using WeddingPlanner.Infrastructure.Storage;
 
 namespace WeddingPlanner.Infrastructure;
 
@@ -37,6 +38,8 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString, provider =>
                 provider.MigrationsAssembly("WeddingPlanner.Web")));
+        services.Configure<FileStorageOptions>(configuration.GetSection("FileStorage"));
+        services.AddScoped<IFileStorageService, S3FileStorageService>();
         services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IRepository<Vendor>, VendorRepository>();
         services.AddScoped<IAddressService, AddressService>();

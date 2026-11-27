@@ -76,6 +76,53 @@ Las cuentas locales actuales usan ASP.NET Core Identity con cookies.
 
 La configuración usa `Authentication:Provider`, con valores `None`, `Firebase` o `Supabase`. Los valores se inyectan desde `.env` mediante Docker y ya están enlazados a `ExternalAuthenticationOptions`. La validación de tokens y el alta de usuarios se implementarán detrás de esta configuración cuando se elija el proveedor definitivo; no se guardan claves privadas ni tokens en el repositorio.
 
+## Documentos y RustFS
+
+Los archivos nuevos usan `IFileStorageService` (Application) y `S3FileStorageService`
+(Infrastructure, AWS SDK); PostgreSQL guarda únicamente metadatos y una clave aleatoria.
+Los enlaces `FileUrl` anteriores siguen funcionando como enlaces externos, con el mismo
+acceso previo; no se importan ni se protegen automáticamente. Los archivos nuevos
+requieren una contratación del proveedor en la boda y una sesión Identity cuyo ID
+coincida con `Wedding.CoordinatorId`. Actualmente la interfaz no asigna coordinadores:
+una boda sin coordinador no puede recibir archivos hasta que un administrador asigne
+uno mediante un procedimiento externo autorizado. No se modificó la autenticación.
+
+Para desarrollo local:
+
+1. Copia `.env.example` a `.env` si todavía no existe y configura valores únicos para
+   `RUSTFS_ACCESS_KEY` y `RUSTFS_SECRET_KEY`. No uses las credenciales de ejemplo
+   conocidas de RustFS ni publiques `.env`.
+2. Ejecuta `docker compose -f docker-compose.yml -f docker-compose.rustfs.yml up -d --build`.
+   RustFS expone S3 y la consola solo en localhost, en los puertos configurados;
+   los datos se conservan en el volumen `rustfs_data`.
+3. Crea el bucket privado mediante la consola (`http://localhost:9001`) o AWS CLI:
+   configura sus credenciales y región localmente y ejecuta
+   `aws s3 mb s3://wedding-documents --endpoint-url http://localhost:9000`.
+   Ajusta el nombre y puerto si cambiaste `RUSTFS_BUCKET` o `RUSTFS_PORT`.
+4. Verifica el servicio con `curl.exe --fail http://localhost:9000/health`.
+   Compose comprueba ese endpoint y espera a que RustFS esté saludable antes
+   de iniciar Web.
+
+Para ejecutar Web fuera de Docker, configura `FileStorage__Endpoint` (por ejemplo
+`http://localhost:9000`), `FileStorage__Bucket`, `FileStorage__Region`,
+`FileStorage__AccessKey`, `FileStorage__SecretKey`, `FileStorage__UseSSL` y
+`FileStorage__ForcePathStyle` como variables de entorno o User Secrets. Usa HTTPS
+fuera de desarrollo. Cambiar endpoint, región, credenciales, SSL y path-style permite
+usar otro proveedor compatible con S3; el bucket debe existir y permanecer privado.
+`FileStorage:MaxFileSizeBytes` limita cada archivo a 10 MiB por defecto;
+`FileStorage:AllowedExtensions` permite restringir PDF, JPG y PNG. El servidor
+comprueba extensión, MIME y firma de archivo. El selector del navegador es solo una
+ayuda; ampliar la lista requiere implementar la validación del nuevo formato.
+
+Las descargas pasan por el servidor, verifican el coordinador y se entregan como
+adjuntos sin URL pública. Si falla el registro después de subir, se intenta borrar el
+objeto; si la compensación falla, se registra la clave para su limpieza manual.
+La eliminación primero marca el documento como pendiente en la base de datos; si
+falla S3, vuelve a pulsar Eliminar para reintentar. No se puede borrar un proveedor
+con documentos vinculados: elimina primero sus documentos. La migración
+`AddVendorDocumentStorage` conserva los enlaces y no admite reversión automática
+porque descartaría referencias a objetos; realiza una copia antes de aplicarla.
+
 ## Validación
 
 ```powershell

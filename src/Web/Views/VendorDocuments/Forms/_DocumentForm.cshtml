@@ -5,13 +5,14 @@
 @{
     var isEdit = Model.Id != Guid.Empty;
     var assignments = (IEnumerable<VendorAssignment>)ViewData["Assignments"]!;
+    var weddings = (IReadOnlyDictionary<Guid, Wedding>)ViewData["Weddings"]!;
 }
 
 <form asp-controller="VendorDocuments"
       asp-action="@(isEdit ? "Edit" : "Create")"
       asp-route-vendorId="@Model.VendorId"
       asp-route-id="@Model.Id"
-      method="post">
+      method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
     <input asp-for="Id" type="hidden" />
     <input asp-for="VendorId" type="hidden" />
@@ -30,8 +31,22 @@
             <label asp-for="FileUrl" class="form-label">Enlace al archivo</label>
             <input asp-for="FileUrl" type="url" class="form-control" />
             <span asp-validation-for="FileUrl" class="text-danger"></span>
-            <div class="form-text">Se guarda un enlace; la aplicación no sube archivos.</div>
+            <div class="form-text">Usa un enlace externo o selecciona un archivo, no ambos.</div>
         </div>
+        @if (!isEdit)
+        {
+            <div class="col-12">
+                <label asp-for="File" class="form-label">Archivo</label>
+                <input asp-for="File" type="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png" aria-describedby="file-help" />
+                <span asp-validation-for="File" class="text-danger"></span>
+                <div id="file-help" class="form-text">PDF, JPG o PNG. Para subir archivos selecciona una contratación de una boda que coordines.</div>
+            </div>
+            <div class="col-12">
+                <label asp-for="Description" class="form-label">Descripción (opcional)</label>
+                <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+        }
         <div class="col-md-6">
             <label asp-for="ExpiryDate" class="form-label">Fecha de vencimiento</label>
             <input asp-for="ExpiryDate" type="date" class="form-control" />
@@ -42,7 +57,7 @@
                 <option value="">Sin asignación</option>
                 @foreach (var assignment in assignments)
                 {
-                    <option value="@assignment.Id">@assignment.ContractDate.ToString("d") · @assignment.PaymentAmount.ToString("C")</option>
+                    <option value="@assignment.Id">@(weddings.GetValueOrDefault(assignment.WeddingId)?.Title ?? "Boda no disponible") · @assignment.ContractDate.ToString("d") · @assignment.PaymentAmount.ToString("C")</option>
                 }
             </select>
             <span asp-validation-for="VendorAssignmentId" class="text-danger"></span>

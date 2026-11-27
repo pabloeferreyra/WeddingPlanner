@@ -113,6 +113,7 @@ public static class DependencyInjection
         services.AddScoped<UpdateVendorDocumentHandler>();
         services.AddScoped<DeleteVendorDocumentHandler>();
         services.AddScoped<VendorDocumentExistsHandler>();
+        services.AddScoped<StoredVendorDocumentHandler>();
 
         services.AddScoped<GetAllVendorsHandler>();
         services.AddScoped<GetVendorByIdHandler>();

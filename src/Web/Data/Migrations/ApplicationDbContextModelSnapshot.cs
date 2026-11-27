@@ -757,6 +757,17 @@ namespace WeddingPlanner.Web.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("DeletionPending")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
                     b.Property<string>("DocumentName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -768,9 +779,19 @@ namespace WeddingPlanner.Web.Data.Migrations
                     b.Property<DateTime?>("ExpiryDate")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("FileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<long?>("FileSize")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("FileUrl")
-                        .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("StorageKey")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("UploadedAt")
                         .HasColumnType("timestamp without time zone");
@@ -787,7 +808,10 @@ namespace WeddingPlanner.Web.Data.Migrations
 
                     b.HasIndex("VendorId");
 
-                    b.ToTable("VendorDocument");
+                    b.ToTable("VendorDocument", t =>
+                        {
+                            t.HasCheckConstraint("CK_VendorDocument_Storage", "(\"FileUrl\" IS NOT NULL AND \"StorageKey\" IS NULL) OR (\"FileUrl\" IS NULL AND \"StorageKey\" IS NOT NULL AND \"VendorAssignmentId\" IS NOT NULL AND \"FileName\" IS NOT NULL AND \"ContentType\" IS NOT NULL AND \"FileSize\" IS NOT NULL AND \"FileSize\" > 0)");
+                        });
                 });
 
             modelBuilder.Entity("WeddingPlanner.Core.Domain.Entities.VendorPayment", b =>
@@ -1127,7 +1151,7 @@ namespace WeddingPlanner.Web.Data.Migrations
                     b.HasOne("WeddingPlanner.Core.Domain.Entities.Vendor", "Vendor")
                         .WithMany("Documents")
                         .HasForeignKey("VendorId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Vendor");

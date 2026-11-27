@@ -62,6 +62,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(payment => payment.VendorAssignmentId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<VendorDocument>(entity =>
+        {
+            entity.HasOne(document => document.Vendor)
+                .WithMany(vendor => vendor.Documents)
+                .HasForeignKey(document => document.VendorId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.ToTable(table => table.HasCheckConstraint("CK_VendorDocument_Storage",
+                "(\"FileUrl\" IS NOT NULL AND \"StorageKey\" IS NULL) OR " +
+                "(\"FileUrl\" IS NULL AND \"StorageKey\" IS NOT NULL AND \"VendorAssignmentId\" IS NOT NULL AND \"FileName\" IS NOT NULL AND \"ContentType\" IS NOT NULL AND \"FileSize\" IS NOT NULL AND \"FileSize\" > 0)"));
+        });
+
         modelBuilder.Entity<Budget>()
             .Property(budget => budget.CategoryAllocations)
             .HasConversion(
