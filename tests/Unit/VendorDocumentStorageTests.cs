@@ -9,6 +9,7 @@ using WeddingPlanner.Application.Abstractions.Services;
 using WeddingPlanner.Application.Implementations;
 using WeddingPlanner.Core.Domain.Entities;
 using WeddingPlanner.Infrastructure.Data;
+using WeddingPlanner.Infrastructure.Storage;
 
 namespace WeddingPlanner.Tests.Unit;
 
@@ -124,18 +125,52 @@ public class VendorDocumentStorageTests
         _ => throw new ArgumentOutOfRangeException(nameof(format))
     };
 
-    private static byte[] CreatePdf()
+    private static byte[] CreatePdf(string? embeddedContent = null)
     {
         var pdf = new StringBuilder("%PDF-1.4\n");
         var first = pdf.Length;
         pdf.Append("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
         var second = pdf.Length;
         pdf.Append("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n");
+        var third = pdf.Length;
+        if (embeddedContent is not null)
+            pdf.Append($"3 0 obj\n<< /Length {embeddedContent.Length} >>\nstream\n{embeddedContent}\nendstream\nendobj\n");
         var xref = pdf.Length;
-        pdf.Append("xref\n0 3\n0000000000 65535 f \n");
+        pdf.Append($"xref\n0 {(embeddedContent is null ? 3 : 4)}\n0000000000 65535 f \n");
         pdf.Append($"{first:D10} 00000 n \n{second:D10} 00000 n \n");
-        pdf.Append($"trailer\n<< /Size 3 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n");
+        if (embeddedContent is not null) pdf.Append($"{third:D10} 00000 n \n");
+        pdf.Append($"trailer\n<< /Size {(embeddedContent is null ? 3 : 4)} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n");
         return Encoding.ASCII.GetBytes(pdf.ToString());
+    }
+
+    [ClamAvIntegrationFact]
+    public async Task Real_clamav_detects_eicar_and_upload_never_reaches_storage()
+    {
+        const string eicar = @"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*";
+        var scanner = new ClamAvFileSecurityScanner(Options.Create(new ClamAvOptions
+        {
+            Host = "127.0.0.1",
+            Port = int.Parse(Environment.GetEnvironmentVariable("CLAMAV_TEST_PORT")!)
+        }), NullLogger<ClamAvFileSecurityScanner>.Instance);
+        var detection = await scanner.ScanAsync(new MemoryStream(Encoding.ASCII.GetBytes(eicar)), default);
+        Assert.Equal(FileScanStatus.Infected, detection.Status);
+        var fixture = new Fixture(scanner);
+        var clean = await fixture.Upload();
+        Assert.Single(fixture.Storage.Objects);
+        fixture.Storage.Objects.Clear();
+        var pdf = CreatePdf(eicar);
+        await Assert.ThrowsAsync<ValidationException>(() => fixture.Service.UploadAsync(
+            fixture.Document(), new MemoryStream(pdf), "contract.pdf", "application/pdf", "coordinator", default));
+        Assert.Equal(1, fixture.Storage.UploadCalls);
+        Assert.Single(fixture.Documents.Items);
+        Assert.Contains(clean.Id, fixture.Documents.Items.Keys);
+        Assert.Empty(fixture.Storage.Objects);
+        var oldDocument = fixture.Document();
+        oldDocument.StorageKey = "old-document";
+        fixture.Documents.Items.Add(oldDocument.Id, oldDocument);
+        fixture.Storage.Objects.Add(oldDocument.StorageKey, pdf);
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            fixture.Service.DownloadAsync(fixture.VendorId, oldDocument.Id, "coordinator", default));
     }
 
     [Fact]
@@ -145,6 +180,92 @@ public class VendorDocumentStorageTests
         fixture.Options.MaxFileSizeBytes = 4;
         await Assert.ThrowsAsync<ValidationException>(() => fixture.Upload());
         Assert.Empty(fixture.Storage.Objects);
+    }
+
+    public sealed class ClamAvIntegrationFactAttribute : FactAttribute
+    {
+        public ClamAvIntegrationFactAttribute()
+        {
+            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CLAMAV_TEST_PORT")))
+                Skip = "Set CLAMAV_TEST_PORT to run the real ClamAV integration test.";
+        }
+    }
+
+    [Theory]
+    [InlineData(FileScanStatus.Infected, FileScanError.None)]
+    [InlineData(FileScanStatus.Error, FileScanError.Unavailable)]
+    [InlineData(FileScanStatus.Error, FileScanError.Timeout)]
+    [InlineData((FileScanStatus)999, FileScanError.None)]
+    public async Task Unclean_or_indeterminate_scan_never_calls_storage(FileScanStatus status, FileScanError error)
+    {
+        var fixture = new Fixture();
+        fixture.Scanner.Result = new(status, "internal-threat", error);
+        var exception = await Assert.ThrowsAsync<ValidationException>(() => fixture.Upload());
+        Assert.DoesNotContain("internal-threat", exception.Message);
+        Assert.Equal(1, fixture.Scanner.Calls);
+        Assert.Equal(0, fixture.Storage.UploadCalls);
+        Assert.Empty(fixture.Documents.Items);
+    }
+
+    [Fact]
+    public async Task Contradictory_clean_result_is_rejected()
+    {
+        var fixture = new Fixture();
+        fixture.Scanner.Result = new(FileScanStatus.Clean, Error: FileScanError.Timeout);
+        await Assert.ThrowsAsync<ValidationException>(() => fixture.Upload());
+        Assert.Equal(0, fixture.Storage.UploadCalls);
+    }
+
+    [Fact]
+    public async Task Scanner_failure_is_reported_without_calling_storage()
+    {
+        var fixture = new Fixture();
+        fixture.Scanner.Fail = true;
+        var error = await Assert.ThrowsAsync<ValidationException>(() => fixture.Upload());
+        Assert.DoesNotContain("internal failure", error.Message);
+        Assert.Equal(0, fixture.Storage.UploadCalls);
+    }
+
+    [Fact]
+    public async Task Clean_scan_precedes_storage_and_both_receive_the_complete_file()
+    {
+        var fixture = new Fixture();
+        fixture.Storage.BeforeUpload = () => Assert.Equal(1, fixture.Scanner.Calls);
+        var document = await fixture.Upload();
+        Assert.Equal(fixture.Content, fixture.Scanner.Scanned);
+        Assert.Equal(fixture.Content, fixture.Storage.Objects[document.StorageKey!]);
+    }
+
+    [Theory]
+    [InlineData(FileScanStatus.Infected)]
+    [InlineData(FileScanStatus.Error)]
+    public async Task Previously_stored_files_cannot_be_downloaded_without_a_clean_scan(FileScanStatus status)
+    {
+        var fixture = new Fixture();
+        var document = fixture.Document();
+        document.StorageKey = "previously-stored";
+        fixture.Documents.Items.Add(document.Id, document);
+        fixture.Storage.Objects.Add(document.StorageKey, fixture.Content);
+        fixture.Scanner.Result = new(status);
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            fixture.Service.DownloadAsync(fixture.VendorId, document.Id, "coordinator", default));
+        Assert.Equal(1, fixture.Scanner.Calls);
+        Assert.Single(fixture.Storage.Objects);
+    }
+
+    [Fact]
+    public async Task Download_scans_exact_bytes_and_disposes_temporary_file()
+    {
+        var fixture = new Fixture();
+        var document = await fixture.Upload();
+        var result = await fixture.Service.DownloadAsync(fixture.VendorId, document.Id, "coordinator", default);
+        var path = Assert.IsType<FileStream>(result).Name;
+        using var buffer = new MemoryStream();
+        await result.CopyToAsync(buffer);
+        await result.DisposeAsync();
+        Assert.Equal(fixture.Content, fixture.Scanner.Scanned);
+        Assert.Equal(fixture.Content, buffer.ToArray());
+        Assert.False(File.Exists(path));
     }
 
     [Fact]
@@ -245,16 +366,17 @@ public class VendorDocumentStorageTests
         public readonly MemoryRepository<VendorDocument> Documents = new(document => document.Id);
         public readonly MemoryRepository<VendorAssignment> Assignments = new(assignment => assignment.Id);
         public readonly FakeStorage Storage = new();
+        public readonly FakeScanner Scanner = new();
         public readonly FileStorageOptions Options = new();
         public readonly VendorDocumentService Service;
         public readonly byte[] Content = CreatePdf();
 
-        public Fixture()
+        public Fixture(IFileSecurityScanner? scanner = null)
         {
             var wedding = new Wedding { CoordinatorId = "coordinator" };
             Assignment = new VendorAssignment { VendorId = VendorId, WeddingId = wedding.Id };
             Assignments.Items.Add(Assignment.Id, Assignment);
-            Service = new VendorDocumentService(Documents, Assignments, new FakeWeddings(wedding), Storage,
+            Service = new VendorDocumentService(Documents, Assignments, new FakeWeddings(wedding), Storage, scanner ?? Scanner,
                 Microsoft.Extensions.Options.Options.Create(Options), NullLogger<VendorDocumentService>.Instance);
         }
 
@@ -272,13 +394,18 @@ public class VendorDocumentStorageTests
         public Dictionary<string, byte[]> Objects { get; } = [];
         public bool FailUpload { get; set; }
         public bool FailDelete { get; set; }
+        public int UploadCalls { get; private set; }
+        public Action? BeforeUpload { get; set; }
         public async Task UploadAsync(string key, Stream content, string contentType, CancellationToken cancellationToken)
         {
+            UploadCalls++;
+            BeforeUpload?.Invoke();
             if (FailUpload) throw new InvalidOperationException("Storage unavailable");
             using var buffer = new MemoryStream();
             await content.CopyToAsync(buffer, cancellationToken);
             Objects.Add(key, buffer.ToArray());
         }
+
         public Task<Stream> DownloadAsync(string key, CancellationToken cancellationToken) =>
             Task.FromResult<Stream>(new MemoryStream(Objects[key]));
         public Task DeleteAsync(string key, CancellationToken cancellationToken)
@@ -286,6 +413,23 @@ public class VendorDocumentStorageTests
             if (FailDelete) throw new InvalidOperationException("Storage unavailable");
             Objects.Remove(key);
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeScanner : IFileSecurityScanner
+    {
+        public FileScanResult Result { get; set; } = new(FileScanStatus.Clean);
+        public bool Fail { get; set; }
+        public int Calls { get; private set; }
+        public byte[]? Scanned { get; private set; }
+        public async Task<FileScanResult> ScanAsync(Stream content, CancellationToken cancellationToken)
+        {
+            Calls++;
+            if (Fail) throw new InvalidOperationException("internal failure");
+            using var buffer = new MemoryStream();
+            await content.CopyToAsync(buffer, cancellationToken);
+            Scanned = buffer.ToArray();
+            return Result;
         }
     }
 

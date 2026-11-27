@@ -208,6 +208,11 @@ public sealed class VendorDocumentsController(
         {
             return NotFound();
         }
+        catch (ValidationException)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                "No se pudo verificar el documento. Inténtalo nuevamente.");
+        }
     }
 
     private string? CurrentUserId =>

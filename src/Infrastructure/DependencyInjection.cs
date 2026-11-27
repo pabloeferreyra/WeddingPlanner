@@ -43,6 +43,11 @@ public static class DependencyInjection
             .Validate(options => options.MaxFileSizeBytes > 0 && options.MaxFileSizeBytes <= FileStorageOptions.MaximumFileSizeBytes,
                 "FileStorage:MaxFileSizeBytes debe estar entre 1 y 10485760 bytes.")
             .ValidateOnStart();
+        services.AddOptions<ClamAvOptions>()
+            .Bind(configuration.GetSection("Antivirus"))
+            .Validate(options => options.IsValid(), "El antivirus debe estar habilitado y ser obligatorio, con opciones válidas.")
+            .ValidateOnStart();
+        services.AddScoped<IFileSecurityScanner, ClamAvFileSecurityScanner>();
         services.AddScoped<IFileStorageService, S3FileStorageService>();
         services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IRepository<Vendor>, VendorRepository>();

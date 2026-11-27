@@ -40,17 +40,64 @@ Al retomar trabajo, revisa también el estado actual del repositorio antes de ca
 
 ## Ejecutar con Docker
 
+Compose administra solo Web, RustFS y ClamAV. PostgreSQL es un contenedor existente
+e independiente: Compose no lo crea, conecta, detiene ni elimina, y no administra
+su volumen. La red interna `internal-services` comunica los tres servicios; `outbound`
+permite a Web alcanzar PostgreSQL por IP privada y a FreshClam actualizar firmas.
+RustFS y ClamAV no publican puertos en la configuración principal.
+
+En el VPS, identifica primero las redes del contenedor PostgreSQL **sin modificarlo**:
+
 ```powershell
-docker compose up --build
+docker inspect --format '{{range $name, $network := .NetworkSettings.Networks}}{{$name}}{{"\n"}}{{end}}' <contenedor-postgresql>
+docker network ls
 ```
 
-La aplicación Razor queda disponible en `http://localhost:${WEB_PORT}` y PostgreSQL en el puerto `${DB_PORT}`. Las migraciones se aplican automáticamente al arrancar el contenedor web.
+Configura en `.env` las credenciales existentes y `DB_HOST`, `DB_PORT`, `DB_NAME`,
+`DB_USER` y `DB_PASSWORD`. `DB_HOST` debe ser accesible **desde Web**, nunca
+`localhost` ni `127.0.0.1`. No guardes `.env` en el repositorio.
 
-Para iniciar también pgAdmin:
+Si PostgreSQL ya pertenece a una red Docker externa de tipo bridge con resolución
+DNS, usa su nombre o alias en esa red como `DB_HOST` y establece `DB_NETWORK` con
+el nombre de la red; `DB_PORT` es el puerto interno de PostgreSQL. Conecta solo Web
+a la red existente:
 
 ```powershell
-docker compose --profile tools up --build
+docker compose -f docker-compose.yml -f docker-compose.database-network.yml up -d --build web rustfs clamav
 ```
+
+La red debe existir previamente y PostgreSQL ya debe estar conectado a ella; el
+override no modifica ese contenedor. Verifica su alias y los permisos de acceso antes
+del despliegue. Si no existe una red compartida adecuada, un administrador puede
+planificar una red externa compartida por separado; no conectes ni recrees el
+contenedor existente como parte de este despliegue.
+
+Alternativamente, usa como `DB_HOST` una IP privada del VPS accesible desde la red
+Docker y el puerto real de PostgreSQL, y despliega sin el override de red externa:
+En este caso `DB_PORT` debe ser el puerto accesible en esa IP, que puede diferir del
+puerto interno del contenedor.
+
+```powershell
+docker compose up -d --build web rustfs clamav
+```
+
+Esta alternativa requiere que PostgreSQL ya escuche en una interfaz accesible y que
+el firewall y las reglas de acceso permitan únicamente el origen Docker autorizado;
+un puerto publicado solo en loopback no es accesible mediante la IP privada. Comprueba
+el origen efectivo de la conexión y usa TLS cuando corresponda. Ninguna alternativa
+necesita exponer PostgreSQL a Internet.
+
+La aplicación queda disponible en el puerto `${WEB_PORT}`. Web aplica migraciones
+automáticamente a la base configurada al iniciar: verifica que sea la base correcta
+y realiza una copia de seguridad antes de desplegar. La disponibilidad de PostgreSQL
+no se comprueba mediante `depends_on`; si no está accesible, Web fallará al iniciar
+y Docker volverá a intentarlo. No uses `--remove-orphans` ni `docker compose down`
+en despliegues anteriores sin identificar primero sus contenedores y volúmenes:
+podrían incluir el PostgreSQL preexistente.
+La red interna nueva no reutiliza la antigua red de Compose que pudiera contener
+PostgreSQL. Conserva el mismo nombre de proyecto Compose para reutilizar los volúmenes
+existentes de RustFS, ClamAV y claves de Identity; confirma sus nombres antes de
+desplegar y no elimines volúmenes antiguos automáticamente.
 
 ## Ejecutar sin Docker
 
@@ -87,21 +134,26 @@ coincida con `Wedding.CoordinatorId`. Actualmente la interfaz no asigna coordina
 una boda sin coordinador no puede recibir archivos hasta que un administrador asigne
 uno mediante un procedimiento externo autorizado. No se modificó la autenticación.
 
-Para desarrollo local:
+Para configurar RustFS:
 
 1. Copia `.env.example` a `.env` si todavía no existe y configura valores únicos para
    `RUSTFS_ACCESS_KEY` y `RUSTFS_SECRET_KEY`. No uses las credenciales de ejemplo
    conocidas de RustFS ni publiques `.env`.
-2. Ejecuta `docker compose -f docker-compose.yml -f docker-compose.rustfs.yml up -d --build`.
-   RustFS expone S3 y la consola solo en localhost, en los puertos configurados;
-   los datos se conservan en el volumen `rustfs_data`.
-3. Crea el bucket privado mediante la consola (`http://localhost:9001`) o AWS CLI:
+2. Despliega los tres servicios con el procedimiento anterior. Los datos se
+   conservan en `rustfs_data` y las firmas en `clamav_data`.
+3. Si necesitas administrar RustFS desde el host, habilita **temporalmente** su
+   override opcional, que publica los puertos únicamente en `127.0.0.1`:
+   `docker compose -f docker-compose.yml -f docker-compose.rustfs.yml up -d rustfs`.
+   Esto recrea RustFS conservando su volumen y lo conecta temporalmente también a
+   `outbound` para habilitar el acceso desde el host. En un VPS remoto utiliza un
+   túnel SSH hacia localhost; no abras esos puertos públicamente.
+4. Crea el bucket privado mediante la consola (`http://localhost:9001`) o AWS CLI:
    configura sus credenciales y región localmente y ejecuta
    `aws s3 mb s3://wedding-documents --endpoint-url http://localhost:9000`.
    Ajusta el nombre y puerto si cambiaste `RUSTFS_BUCKET` o `RUSTFS_PORT`.
-4. Verifica el servicio con `curl.exe --fail http://localhost:9000/health`.
-   Compose comprueba ese endpoint y espera a que RustFS esté saludable antes
-   de iniciar Web.
+5. Verifica el servicio con `curl.exe --fail http://localhost:9000/health` mientras
+   el override esté activo. Después, `docker compose up -d rustfs` vuelve a recrear
+   RustFS sin publicar puertos. Compose comprueba su salud antes de iniciar Web.
 
 Para ejecutar Web fuera de Docker, configura `FileStorage__Endpoint` (por ejemplo
 `http://localhost:9000`), `FileStorage__Bucket`, `FileStorage__Region`,
@@ -123,16 +175,84 @@ comprueba nombre, extensión, MIME y estructura: cabecera, `startxref` y termina
 para PDF; chunks IHDR, IDAT e IEND para PNG; marcadores, dimensiones y segmentos
 de imagen para JPEG. Los PDF deben terminar con `%%EOF` y tener `startxref` en los
 últimos 2048 bytes; los JPEG deben terminar en el marcador EOI. Estas comprobaciones
-no decodifican imágenes ni verifican CRC, integridad semántica completa o malware:
+no decodifican imágenes ni verifican CRC o integridad semántica completa:
 algunos archivos inválidos pueden pasar y algunos archivos válidos con relleno
-atípico pueden rechazarse. No hay antivirus integrado; para producción considera
-un escáner independiente antes de incorporar archivos al almacenamiento definitivo.
+atípico pueden rechazarse.
 El selector del navegador es solo una ayuda; ampliar la lista requiere implementar
 la validación del nuevo formato.
 
+### Antivirus ClamAV
+
+Cada carga de archivo pasa primero las validaciones de formato y después
+`IFileSecurityScanner` (Application). Infrastructure implementa el protocolo oficial
+`INSTREAM` de ClamAV con lectura por bloques, timeout y cancelación; solo un resultado
+inequívoco `Clean` permite subir a S3 y registrar metadatos. Un archivo infectado,
+un error, una respuesta desconocida o un timeout rechazan la carga sin escribir en
+RustFS. Los mensajes de usuario no contienen el nombre de la amenaza ni detalles
+internos. Los documentos externos anteriores mantienen su comportamiento: no se
+analizan automáticamente ni quedan protegidos por esta integración.
+
+Como los objetos S3 anteriores no tienen una marca verificable de análisis, cada
+descarga protegida también se analiza antes de entregarse. Se copia el objeto a un
+archivo temporal privado de hasta 10 MiB, se analiza esa misma copia y se elimina
+al cerrar el stream o ante un error. Si ClamAV no está disponible o rechaza el
+contenido, tampoco se entrega la descarga. El directorio temporal debe tener espacio
+suficiente y permisos privados; esta verificación añade latencia y uso de disco.
+
+`docker-compose.yml` inicia la imagen oficial `clamav/clamav:1.5` con un límite de
+4 GiB de memoria y el volumen persistente `clamav_data` para firmas. ClamAV escucha
+en el puerto 3310 de la red de Compose, sin publicarlo al host. `web` utiliza
+`Antivirus__Host=clamav` y puede arrancar antes de que el antivirus esté listo:
+durante ese tiempo las cargas se rechazan. El healthcheck oficial solo responde
+cuando `clamd` ha iniciado con una base de firmas cargada. El primer inicio puede
+demorar varios minutos; la imagen incluye una base inicial y FreshClam comprueba
+actualizaciones 12 veces al día, notificando a `clamd` cuando cambia la base.
+Los errores de actualización aparecen en los logs de ClamAV. El estado saludable
+no garantiza por sí solo que las firmas sean recientes: monitoriza su actualización.
+
+```powershell
+docker compose ps clamav
+docker compose exec clamav clamdcheck.sh
+docker compose logs --tail 100 clamav
+```
+
+Las opciones `Antivirus:Enabled` y `Antivirus:Required` deben permanecer en `true`:
+desactivarlas o usar host, puerto, timeout o límite inválidos impide iniciar Web.
+Configura `Antivirus:Host`, `Antivirus:Port`, `Antivirus:TimeoutSeconds` (1–300;
+predeterminado 30) y `Antivirus:MaxScanSizeBytes` (1–10 485 760; predeterminado
+10 MiB) con configuración o variables de entorno. Si el límite de análisis es
+menor que el de subida, los archivos que lo superen se rechazan. Mantén también
+`StreamMaxLength` de ClamAV igual o superior al límite configurado para la app.
+La imagen activa alertas para documentos cifrados y límites de análisis excedidos.
+
+Para Web fuera de Docker se necesita un ClamAV accesible en una red privada y los
+valores `Antivirus__Host` y `Antivirus__Port` correspondientes; Compose no publica
+ese puerto por defecto. El protocolo TCP de ClamAV no cifra ni autentica: no lo
+expongas a Internet ni a redes no confiables. Para diagnosticar rechazos, revisa
+salud, logs, conectividad, memoria disponible, actualización de firmas y timeout;
+no deshabilites el antivirus. Ante bloqueos al iniciar, permite tiempo y salida de
+red para FreshClam; una base ausente o inválida impide que `clamd` quede listo.
+
+Para ejecutar la prueba opcional con un ClamAV real aislado y EICAR, publica su
+puerto solo en localhost y configura el puerto asignado:
+
+```powershell
+docker run -d --rm --name wp-clamav-integration -p 127.0.0.1::3310 --memory 4g -e CLAMAV_NO_FRESHCLAMD=true -e CLAMD_CONF_AlertExceedsMax=yes -e CLAMD_CONF_AlertEncryptedDoc=yes clamav/clamav:1.5
+docker inspect --format '{{.State.Health.Status}}' wp-clamav-integration
+docker port wp-clamav-integration 3310
+$env:CLAMAV_TEST_PORT = '<puerto-local-asignado>'
+dotnet test tests\Unit\WeddingPlanner.Tests.Unit.csproj --filter 'FullyQualifiedName~Real_clamav_detects_eicar'
+docker stop wp-clamav-integration
+Remove-Item Env:\CLAMAV_TEST_PORT
+```
+
+Espera a que el estado sea `healthy` antes de ejecutar la prueba. El contenedor de
+prueba usa las firmas incluidas en la imagen y no guarda EICAR en RustFS; no
+sustituye la supervisión de FreshClam en el servicio normal.
+
 Las descargas pasan por el servidor, verifican el coordinador y se entregan como
-adjuntos sin URL pública. El stream de descarga libera también la respuesta S3
-cuando el consumidor termina o falla la lectura. Los listados filtran por proveedor,
+adjuntos sin URL pública. El stream y la respuesta S3 se liberan al completar o
+fallar la copia temporal, antes del análisis y la entrega. Los listados filtran por proveedor,
 asignación y coordinador en PostgreSQL, sin seguimiento EF ni consultas por documento;
 los enlaces externos conservan su acceso anterior. Si falla el registro después de subir, se intenta borrar el
 objeto; si la compensación falla, se registra la clave para su limpieza manual.
@@ -164,4 +284,4 @@ dotnet test WeddingPlanner.slnx
 - `Infrastructure` implementa los contratos de persistencia y expone `AddInfrastructure`.
 - `Web` compone las dependencias y solo consume casos de uso.
 - Identity se integra en el monolito mediante `AddDefaultIdentity` y Razor Pages.
-- PostgreSQL se ejecuta como servicio `postgres` y la aplicación se conecta usando el nombre DNS interno `postgres`.
+- PostgreSQL se administra por separado; Web accede mediante una red externa ya existente o una IP privada.

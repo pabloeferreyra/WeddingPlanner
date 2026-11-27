@@ -12,6 +12,7 @@ public sealed class VendorDocumentService(
     IRepository<VendorAssignment> assignments,
     IWeddingRepository weddings,
     IFileStorageService storage,
+    IFileSecurityScanner scanner,
     IOptions<FileStorageOptions> options,
     ILogger<VendorDocumentService> logger) : IVendorDocumentService
 {
@@ -80,6 +81,9 @@ public sealed class VendorDocumentService(
             throw new ValidationException("El archivo está dañado, incompleto o no coincide con el formato declarado.");
         content.Position = 0;
 
+        await VerifySecurityAsync(content, cancellationToken);
+        content.Position = 0;
+
         document.FileUrl = null;
         document.StorageKey = Guid.NewGuid().ToString("N");
         document.FileName = fileName;
@@ -105,11 +109,71 @@ public sealed class VendorDocumentService(
         }
     }
 
+    private async Task VerifySecurityAsync(Stream content, CancellationToken cancellationToken)
+    {
+        FileScanResult scan;
+        try
+        {
+            scan = await scanner.ScanAsync(content, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Falló el análisis de seguridad del documento.");
+            throw new ValidationException("No se pudo verificar el documento. Inténtalo nuevamente.");
+        }
+        if (scan.Status == FileScanStatus.Infected)
+            throw new ValidationException("El documento fue rechazado por seguridad.");
+        if (scan.Status != FileScanStatus.Clean || scan.Error != FileScanError.None || scan.ThreatName is not null)
+            throw new ValidationException(scan.Error == FileScanError.Timeout
+                ? "No fue posible completar el análisis a tiempo. Inténtalo nuevamente."
+                : "No se pudo verificar el documento. Inténtalo nuevamente.");
+    }
+
     public async Task<Stream> DownloadAsync(Guid vendorId, Guid documentId, string? userId, CancellationToken cancellationToken)
     {
         var document = await GetAuthorizedStoredAsync(vendorId, documentId, userId, cancellationToken);
         if (document.DeletionPending) throw new ValidationException("El documento está pendiente de eliminación.");
-        return await storage.DownloadAsync(document.StorageKey!, cancellationToken);
+        var temporaryOptions = new FileStreamOptions
+        {
+            Mode = FileMode.CreateNew,
+            Access = FileAccess.ReadWrite,
+            Share = FileShare.None,
+            BufferSize = 81920,
+            Options = FileOptions.Asynchronous | FileOptions.DeleteOnClose
+        };
+        if (!OperatingSystem.IsWindows())
+            temporaryOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        var temporary = new FileStream(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), temporaryOptions);
+        try
+        {
+            long total = 0;
+            await using (var source = await storage.DownloadAsync(document.StorageKey!, cancellationToken))
+            {
+                var buffer = new byte[81920];
+                int count;
+                while ((count = await source.ReadAsync(buffer, cancellationToken)) > 0)
+                {
+                    total += count;
+                    if (total > FileStorageOptions.MaximumFileSizeBytes)
+                        throw new ValidationException("No se pudo verificar el documento. Inténtalo nuevamente.");
+                    await temporary.WriteAsync(buffer.AsMemory(0, count), cancellationToken);
+                }
+            }
+            if (total == 0) throw new ValidationException("No se pudo verificar el documento. Inténtalo nuevamente.");
+            temporary.Position = 0;
+            await VerifySecurityAsync(temporary, cancellationToken);
+            temporary.Position = 0;
+            return temporary;
+        }
+        catch
+        {
+            await temporary.DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DeleteStoredAsync(Guid vendorId, Guid documentId, string? userId, CancellationToken cancellationToken)
